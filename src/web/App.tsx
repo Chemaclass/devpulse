@@ -19,6 +19,9 @@ import { useTheme } from "./theme.js";
 const Skyline3D = lazy(() =>
   import("./components/Skyline3D.js").then((m) => ({ default: m.Skyline3D })),
 );
+const Compare = lazy(() =>
+  import("./components/Compare.js").then((m) => ({ default: m.Compare })),
+);
 
 type Mode = "overall" | "latest" | "date";
 const EXAMPLES = ["torvalds", "gaearon", "chemaclass"];
@@ -144,6 +147,11 @@ export function App() {
     mode: Mode;
     date: string | null;
   } | null>(null);
+  // Second user for side-by-side comparison.
+  const [vsReport, setVsReport] = useState<Report | null>(null);
+  const [vsLoading, setVsLoading] = useState(false);
+  const [vsError, setVsError] = useState<string | null>(null);
+  const [pendingVs, setPendingVs] = useState<string | null>(null);
 
   async function run(raw: string) {
     const username = parseUsername(raw);
@@ -154,6 +162,9 @@ export function App() {
     setReport(null);
     setMode("overall");
     setSelectedDate(null);
+    setVsReport(null);
+    setVsError(null);
+    setQueryParam("vs", null);
     try {
       const r = await getReport(username);
       setReport(r);
@@ -170,8 +181,34 @@ export function App() {
     }
   }
 
+  async function runVs(raw: string) {
+    const username = parseUsername(raw);
+    if (!username) return;
+    setVsLoading(true);
+    setVsError(null);
+    try {
+      const r = await getReport(username);
+      setVsReport(r);
+      setQueryParam("vs", r.profile.login);
+    } catch (err) {
+      setVsError(
+        err instanceof GitHubError && err.kind === "rate_limited"
+          ? "GitHub rate limit hit. Try again in a little while."
+          : (err as Error).message,
+      );
+    } finally {
+      setVsLoading(false);
+    }
+  }
+
+  function exitCompare() {
+    setVsReport(null);
+    setVsError(null);
+    setQueryParam("vs", null);
+  }
+
   // Deep-link support: load ?u=<name> with an optional view (?mode=latest or
-  // ?d=<date>) on first paint and on back/forward.
+  // ?d=<date>) and optional ?vs=<name> on first paint and on back/forward.
   useEffect(() => {
     const load = () => {
       const params = new URLSearchParams(window.location.search);
@@ -181,6 +218,7 @@ export function App() {
       const m: Mode = d ? "date" : params.get("mode") === "latest" ? "latest" : "overall";
       setQuery(u);
       setPendingView({ mode: m, date: d });
+      setPendingVs(params.get("vs"));
       run(u);
     };
     load();
@@ -197,6 +235,15 @@ export function App() {
       setPendingView(null);
     }
   }, [report, pendingView]);
+
+  // Honour a deep-linked ?vs=<name> once the main report has loaded.
+  useEffect(() => {
+    if (report && pendingVs) {
+      runVs(pendingVs);
+      setPendingVs(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [report, pendingVs]);
 
   // Keep the URL in sync with the current view (mode + selected day).
   useEffect(() => {
@@ -263,13 +310,22 @@ export function App() {
 
       {!report && !loading && !error && <Landing />}
 
-      {report && !loading && (
+      {report && !loading && vsReport && (
+        <Suspense fallback={<Skeleton />}>
+          <Compare a={report} b={vsReport} onExit={exitCompare} />
+        </Suspense>
+      )}
+
+      {report && !loading && !vsReport && (
         <Dashboard
           report={report}
           mode={mode}
           setMode={setMode}
           selectedDate={selectedDate}
           setSelectedDate={setSelectedDate}
+          onCompare={runVs}
+          vsLoading={vsLoading}
+          vsError={vsError}
         />
       )}
 
@@ -304,18 +360,58 @@ export function App() {
   );
 }
 
+function CompareBar({
+  onCompare,
+  loading,
+  error,
+}: {
+  onCompare: (name: string) => void;
+  loading: boolean;
+  error: string | null;
+}) {
+  const [value, setValue] = useState("");
+  return (
+    <form
+      className="compare-bar"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (value.trim()) onCompare(value.trim());
+      }}
+    >
+      <span className="cb-label">⚔️ Compare with</span>
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="another username"
+        spellCheck={false}
+        autoCapitalize="none"
+      />
+      <button type="submit" disabled={loading || !value.trim()}>
+        {loading ? "Loading…" : "Compare"}
+      </button>
+      {error && <span className="cb-error">{error}</span>}
+    </form>
+  );
+}
+
 function Dashboard({
   report,
   mode,
   setMode,
   selectedDate,
   setSelectedDate,
+  onCompare,
+  vsLoading,
+  vsError,
 }: {
   report: Report;
   mode: Mode;
   setMode: (m: Mode) => void;
   selectedDate: string | null;
   setSelectedDate: (d: string | null) => void;
+  onCompare: (name: string) => void;
+  vsLoading: boolean;
+  vsError: string | null;
 }) {
   const { profile, calendar } = report;
 
@@ -397,6 +493,8 @@ function Dashboard({
           )}
         </div>
       </div>
+
+      <CompareBar onCompare={onCompare} loading={vsLoading} error={vsError} />
 
       {mode === "overall" ? (
         <OverallView report={report} onPickDay={(d) => {
