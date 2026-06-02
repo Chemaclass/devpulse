@@ -1,12 +1,20 @@
 import { buildReport } from "./aggregate.js";
 import { fetchCalendar } from "./contributions.js";
-import { fetchProfile, fetchPublicEvents } from "./github.js";
+import {
+  fetchProfile,
+  fetchPublicEvents,
+  fetchTopLanguages,
+} from "./github.js";
 import { Report } from "./types.js";
 
 export * from "./types.js";
 export { buildReport } from "./aggregate.js";
 export { fetchCalendar, summarizeCalendar } from "./contributions.js";
-export { fetchProfile, fetchPublicEvents } from "./github.js";
+export {
+  fetchProfile,
+  fetchPublicEvents,
+  fetchTopLanguages,
+} from "./github.js";
 export { derivePersona } from "./persona.js";
 export type { Persona, PersonaTrait } from "./persona.js";
 
@@ -25,10 +33,11 @@ export async function getReport(
     );
   }
 
-  const [profile, calendar, eventsResult] = await Promise.all([
+  const [profile, calendar, eventsResult, languages] = await Promise.all([
     fetchProfile(clean, fetchImpl),
     fetchCalendar(clean, fetchImpl),
     fetchPublicEvents(clean, fetchImpl),
+    fetchTopLanguages(clean, fetchImpl),
   ]);
 
   return buildReport({
@@ -36,6 +45,7 @@ export async function getReport(
     calendar,
     events: eventsResult.events,
     notes: eventsResult.notes,
+    languages,
   });
 }
 

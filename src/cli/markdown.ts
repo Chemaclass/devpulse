@@ -96,6 +96,17 @@ export function toMarkdown(report: Report): string {
     lines.push("");
   }
 
+  if (report.languages.length) {
+    lines.push(`### Top languages`);
+    lines.push("");
+    lines.push(`| Language | Repos | Stars |`);
+    lines.push(`| --- | ---: | ---: |`);
+    for (const l of report.languages.slice(0, 12)) {
+      lines.push(`| ${l.language} | ${l.repos} | ${l.stars} |`);
+    }
+    lines.push("");
+  }
+
   if (byDay.length) {
     lines.push(`### Day by day`);
     lines.push("");

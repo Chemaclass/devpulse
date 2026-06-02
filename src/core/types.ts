@@ -75,6 +75,13 @@ export interface DayStats {
   repos: string[];
 }
 
+/** Aggregated primary-language usage across a user's public repos. */
+export interface LanguageStat {
+  language: string;
+  repos: number;
+  stars: number;
+}
+
 export interface CalendarSummary {
   days: CalendarDay[];
   totalByYear: Record<string, number>;
@@ -96,6 +103,8 @@ export interface Report {
   byDay: DayStats[];
   byRepo: RepoStats[];
   byType: Record<ContributionType, number>;
+  /** Top primary languages across the user's public repos. */
+  languages: LanguageStat[];
   /** The window covered by the detailed `events`. */
   window: { from: string; to: string; days: number };
   /** Non-fatal notes (e.g. rate limiting, truncated events). */

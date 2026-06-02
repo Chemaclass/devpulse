@@ -1,4 +1,4 @@
-import { ActivityEvent, GitHubError, Profile } from "./types.js";
+import { ActivityEvent, GitHubError, LanguageStat, Profile } from "./types.js";
 
 const API = "https://api.github.com";
 
@@ -108,6 +108,51 @@ export async function fetchPublicEvents(
     .filter((e): e is ActivityEvent => e !== null);
 
   return { events, notes };
+}
+
+interface RawRepo {
+  fork: boolean;
+  language: string | null;
+  stargazers_count: number;
+}
+
+/**
+ * Aggregate the primary language across a user's public, non-fork repos.
+ * Best-effort: any failure resolves to an empty list so it never breaks the
+ * core report (languages are an enhancement, not a requirement).
+ */
+export async function fetchTopLanguages(
+  username: string,
+  fetchImpl: typeof fetch = fetch,
+  maxPages = 2,
+): Promise<LanguageStat[]> {
+  const tally = new Map<string, { repos: number; stars: number }>();
+  try {
+    for (let page = 1; page <= maxPages; page++) {
+      const res = await ghFetch(
+        `${API}/users/${encodeURIComponent(
+          username,
+        )}/repos?per_page=100&page=${page}&sort=pushed&type=owner`,
+        fetchImpl,
+      );
+      if (!res.ok) break;
+      const batch = (await res.json()) as RawRepo[];
+      if (!Array.isArray(batch) || batch.length === 0) break;
+      for (const r of batch) {
+        if (r.fork || !r.language) continue;
+        const e = tally.get(r.language) ?? { repos: 0, stars: 0 };
+        e.repos += 1;
+        e.stars += r.stargazers_count ?? 0;
+        tally.set(r.language, e);
+      }
+      if (batch.length < 100) break;
+    }
+  } catch {
+    return [];
+  }
+  return [...tally.entries()]
+    .map(([language, v]) => ({ language, ...v }))
+    .sort((a, b) => b.repos - a.repos || b.stars - a.stars);
 }
 
 interface RawEvent {

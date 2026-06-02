@@ -4,6 +4,7 @@ import {
   ContributionType,
   CONTRIBUTION_TYPES,
   DayStats,
+  LanguageStat,
   Profile,
   Report,
   RepoStats,
@@ -21,9 +22,11 @@ export function buildReport(args: {
   calendar: CalendarSummary;
   events: ActivityEvent[];
   notes?: string[];
+  languages?: LanguageStat[];
 }): Report {
   const { profile, calendar, events } = args;
   const notes = [...(args.notes ?? [])];
+  const languages = args.languages ?? [];
 
   const byDayMap = new Map<string, DayStats>();
   const byRepoMap = new Map<string, RepoStats>();
@@ -95,6 +98,7 @@ export function buildReport(args: {
     byDay,
     byRepo,
     byType,
+    languages,
     window: { from, to, days },
     notes,
   };

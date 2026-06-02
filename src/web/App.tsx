@@ -429,6 +429,10 @@ function OverallView({
     .slice(0, 10)
     .map((r) => ({ name: r.repo, value: r.total, href: r.repoUrl }));
 
+  const langBars: BarDatum[] = report.languages
+    .slice(0, 8)
+    .map((l) => ({ name: l.language, value: l.repos }));
+
   const persona = useMemo(() => derivePersona(report), [report]);
   const [view, setView] = useState<"3d" | "grid">("3d");
 
@@ -531,6 +535,15 @@ function OverallView({
           )}
         </div>
         <div className="card col-6">
+          <h3>Top languages</h3>
+          {langBars.length ? (
+            <Bars data={langBars} />
+          ) : (
+            <p className="muted">No public repositories with a primary language.</p>
+          )}
+        </div>
+
+        <div className="card col-12">
           <h3>Latest events</h3>
           <Feed events={report.events.slice(0, 40)} />
         </div>
