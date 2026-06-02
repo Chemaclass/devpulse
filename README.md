@@ -113,7 +113,7 @@ Contributions are welcome — see **[CONTRIBUTING.md](CONTRIBUTING.md)** for set
 ## 🛠️ Roadmap
 
 - [ ] Optional "paste your own token" toggle to unlock multi-year, per-project history via the GraphQL API.
-- [ ] Shareable result URLs (`?u=username&mode=date&d=2026-05-30`).
+- [x] Shareable result URLs (`?u=username&mode=latest` or `?u=username&d=2026-05-30`).
 - [ ] Compare two users side by side.
 - [ ] Language / repo-topic breakdowns.
 

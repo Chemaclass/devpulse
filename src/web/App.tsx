@@ -139,8 +139,11 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("overall");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  // A ?d=<date> from the URL, applied once the report has loaded.
-  const [pendingDay, setPendingDay] = useState<string | null>(null);
+  // A view (mode + day) read from the URL, applied once the report loads.
+  const [pendingView, setPendingView] = useState<{
+    mode: Mode;
+    date: string | null;
+  } | null>(null);
 
   async function run(raw: string) {
     const username = parseUsername(raw);
@@ -167,18 +170,18 @@ export function App() {
     }
   }
 
-  // Deep-link support: load ?u=<name> (and optional ?d=<date>) on first paint
-  // and on back/forward.
+  // Deep-link support: load ?u=<name> with an optional view (?mode=latest or
+  // ?d=<date>) on first paint and on back/forward.
   useEffect(() => {
     const load = () => {
       const params = new URLSearchParams(window.location.search);
       const u = params.get("u");
+      if (!u) return;
       const d = params.get("d");
-      if (u) {
-        setQuery(u);
-        setPendingDay(d);
-        run(u);
-      }
+      const m: Mode = d ? "date" : params.get("mode") === "latest" ? "latest" : "overall";
+      setQuery(u);
+      setPendingView({ mode: m, date: d });
+      run(u);
     };
     load();
     window.addEventListener("popstate", load);
@@ -186,18 +189,19 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Once the report is in, honour a ?d=<date> deep link by opening that day.
+  // Once the report is in, honour the deep-linked view.
   useEffect(() => {
-    if (report && pendingDay) {
-      setMode("date");
-      setSelectedDate(pendingDay);
-      setPendingDay(null);
+    if (report && pendingView) {
+      setMode(pendingView.mode);
+      setSelectedDate(pendingView.date);
+      setPendingView(null);
     }
-  }, [report, pendingDay]);
+  }, [report, pendingView]);
 
-  // Keep ?d=<date> in the URL in sync with the selected day.
+  // Keep the URL in sync with the current view (mode + selected day).
   useEffect(() => {
     setQueryParam("d", mode === "date" ? selectedDate : null);
+    setQueryParam("mode", mode === "latest" ? "latest" : null);
   }, [mode, selectedDate]);
 
   return (
