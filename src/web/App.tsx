@@ -14,6 +14,7 @@ import { Feed } from "./components/Feed.js";
 import { Heatmap } from "./components/Heatmap.js";
 import { Persona } from "./components/Persona.js";
 import { useTheme } from "./theme.js";
+import { useToken } from "./token.js";
 
 // three.js is heavy; only load it when the 3D view is shown.
 const Skyline3D = lazy(() =>
@@ -116,6 +117,74 @@ function ThemeToggle() {
   );
 }
 
+function TokenControl() {
+  const { token, setToken } = useToken();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(token);
+  return (
+    <div className="token-control">
+      <button
+        className="token-btn"
+        onClick={() => {
+          setDraft(token);
+          setOpen((o) => !o);
+        }}
+        title={token ? "GitHub token set" : "Add a GitHub token (optional)"}
+        aria-label="GitHub token settings"
+      >
+        {token ? "🔓" : "🔑"}
+      </button>
+      {open && (
+        <div className="token-panel">
+          <p className="tp-title">Optional GitHub token</p>
+          <p className="tp-note">
+            Unlocks a higher rate limit and real per-repo history from the last
+            year. Kept only in this browser tab and sent only to
+            api.github.com.
+          </p>
+          <input
+            type="password"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="ghp_…"
+            spellCheck={false}
+            autoCapitalize="none"
+          />
+          <div className="tp-actions">
+            <a
+              href="https://github.com/settings/tokens?type=beta"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Create token →
+            </a>
+            <span className="spacer" />
+            {token && (
+              <button
+                onClick={() => {
+                  setToken("");
+                  setOpen(false);
+                }}
+              >
+                Clear
+              </button>
+            )}
+            <button
+              className="primary"
+              onClick={() => {
+                setToken(draft.trim());
+                setOpen(false);
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ShareButton({ login }: { login: string }) {
   const [copied, setCopied] = useState(false);
   async function copy() {
@@ -152,6 +221,7 @@ export function App() {
   const [vsLoading, setVsLoading] = useState(false);
   const [vsError, setVsError] = useState<string | null>(null);
   const [pendingVs, setPendingVs] = useState<string | null>(null);
+  const { token } = useToken();
 
   async function run(raw: string) {
     const username = parseUsername(raw);
@@ -166,7 +236,7 @@ export function App() {
     setVsError(null);
     setQueryParam("vs", null);
     try {
-      const r = await getReport(username);
+      const r = await getReport(username, fetch, token);
       setReport(r);
     } catch (err) {
       if (err instanceof GitHubError && err.kind === "rate_limited") {
@@ -187,7 +257,7 @@ export function App() {
     setVsLoading(true);
     setVsError(null);
     try {
-      const r = await getReport(username);
+      const r = await getReport(username, fetch, token);
       setVsReport(r);
       setQueryParam("vs", r.profile.login);
     } catch (err) {
@@ -253,7 +323,10 @@ export function App() {
 
   return (
     <div className="shell">
-      <ThemeToggle />
+      <div className="top-controls">
+        <TokenControl />
+        <ThemeToggle />
+      </div>
       <header className="hero">
         <h1 className="logo">
           Dev<span className="spark">⚡</span>Pulse
@@ -640,6 +713,19 @@ function OverallView({
             <p className="muted">No public repositories with a primary language.</p>
           )}
         </div>
+
+        {report.yearRepos && report.yearRepos.length > 0 && (
+          <div className="card col-12">
+            <h3>Top repositories · last year (commits, via token)</h3>
+            <Bars
+              data={report.yearRepos.slice(0, 12).map((r) => ({
+                name: r.repo,
+                value: r.commits,
+                href: r.repoUrl,
+              }))}
+            />
+          </div>
+        )}
 
         <div className="card col-12">
           <h3>Latest events</h3>

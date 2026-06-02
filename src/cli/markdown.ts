@@ -96,6 +96,17 @@ export function toMarkdown(report: Report): string {
     lines.push("");
   }
 
+  if (report.yearRepos && report.yearRepos.length) {
+    lines.push(`### Top repositories last year (commits)`);
+    lines.push("");
+    lines.push(`| Repository | Commits |`);
+    lines.push(`| --- | ---: |`);
+    for (const r of report.yearRepos.slice(0, 15)) {
+      lines.push(`| [${r.repo}](${r.repoUrl}) | ${r.commits} |`);
+    }
+    lines.push("");
+  }
+
   if (report.languages.length) {
     lines.push(`### Top languages`);
     lines.push("");

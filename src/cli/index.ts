@@ -47,6 +47,10 @@ Options:
       --md-only       Only write report.md
   -h, --help          Show this help
 
+Environment:
+  GITHUB_TOKEN        Optional PAT. Raises the rate limit and adds
+                      per-repo commit history for the last year.
+
 Examples:
   npm run report -- chemaclass
   npm run report -- https://github.com/chemaclass -o ./reports
@@ -60,11 +64,15 @@ async function main() {
   }
 
   const username = parseUsername(args.user);
-  process.stdout.write(`Fetching public GitHub activity for "${username}"… `);
+  // Optional: a token raises rate limits and unlocks per-repo year history.
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || undefined;
+  process.stdout.write(
+    `Fetching ${token ? "" : "public "}GitHub activity for "${username}"… `,
+  );
 
   let report;
   try {
-    report = await getReport(username);
+    report = await getReport(username, fetch, token);
   } catch (err) {
     process.stdout.write("\n");
     if (err instanceof GitHubError && err.kind === "rate_limited") {

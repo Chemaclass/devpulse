@@ -112,7 +112,7 @@ Contributions are welcome — see **[CONTRIBUTING.md](CONTRIBUTING.md)** for set
 
 ## 🛠️ Roadmap
 
-- [ ] Optional "paste your own token" toggle to unlock multi-year, per-project history via the GraphQL API.
+- [x] Optional "paste your own token" toggle to unlock per-repo history (last year) via the GraphQL API, plus higher rate limits. The token stays in your browser session and is sent only to api.github.com.
 - [x] Shareable result URLs (`?u=username&mode=latest` or `?u=username&d=2026-05-30`).
 - [x] Compare two users side by side.
 - [x] Language / repo-topic breakdowns.
