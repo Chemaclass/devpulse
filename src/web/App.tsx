@@ -281,6 +281,20 @@ export function App() {
           </a>
           . No tokens, nothing stored.
         </p>
+        <p>
+          Built by{" "}
+          <a href="https://chemaclass.com" target="_blank" rel="noreferrer">
+            Chemaclass
+          </a>{" "}
+          ·{" "}
+          <a
+            href="https://chemaclass.com/sponsor/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            ♥ Sponsor
+          </a>
+        </p>
       </footer>
     </div>
   );
