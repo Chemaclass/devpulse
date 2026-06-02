@@ -21,7 +21,7 @@ const Skyline3D = lazy(() =>
 );
 
 type Mode = "overall" | "latest" | "date";
-const EXAMPLES = ["torvalds", "gaearon", "sindresorhus", "chemaclass"];
+const EXAMPLES = ["torvalds", "gaearon", "chemaclass"];
 
 /** Reflect the current username in the URL so results are shareable. */
 function syncUrl(username: string) {
@@ -29,6 +29,19 @@ function syncUrl(username: string) {
   if (params.get("u") === username) return;
   params.set("u", username);
   window.history.pushState({}, "", `?${params.toString()}`);
+}
+
+/** Add, update or remove a single query param without touching the others. */
+function setQueryParam(key: string, value: string | null) {
+  const params = new URLSearchParams(window.location.search);
+  if (value == null) params.delete(key);
+  else params.set(key, value);
+  const qs = params.toString();
+  window.history.replaceState(
+    {},
+    "",
+    qs ? `?${qs}` : window.location.pathname,
+  );
 }
 
 const FEATURES = [
@@ -126,6 +139,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("overall");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  // A ?d=<date> from the URL, applied once the report has loaded.
+  const [pendingDay, setPendingDay] = useState<string | null>(null);
 
   async function run(raw: string) {
     const username = parseUsername(raw);
@@ -152,12 +167,16 @@ export function App() {
     }
   }
 
-  // Deep-link support: load ?u=<name> on first paint and on back/forward.
+  // Deep-link support: load ?u=<name> (and optional ?d=<date>) on first paint
+  // and on back/forward.
   useEffect(() => {
     const load = () => {
-      const u = new URLSearchParams(window.location.search).get("u");
+      const params = new URLSearchParams(window.location.search);
+      const u = params.get("u");
+      const d = params.get("d");
       if (u) {
         setQuery(u);
+        setPendingDay(d);
         run(u);
       }
     };
@@ -166,6 +185,20 @@ export function App() {
     return () => window.removeEventListener("popstate", load);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Once the report is in, honour a ?d=<date> deep link by opening that day.
+  useEffect(() => {
+    if (report && pendingDay) {
+      setMode("date");
+      setSelectedDate(pendingDay);
+      setPendingDay(null);
+    }
+  }, [report, pendingDay]);
+
+  // Keep ?d=<date> in the URL in sync with the selected day.
+  useEffect(() => {
+    setQueryParam("d", mode === "date" ? selectedDate : null);
+  }, [mode, selectedDate]);
 
   return (
     <div className="shell">
@@ -530,15 +563,16 @@ function DayView({
   }
   if (!data) return null;
 
-  const pretty = new Date(date + "T00:00:00").toLocaleDateString(undefined, {
+  const pretty = new Date(date + "T00:00:00Z").toLocaleDateString(undefined, {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "UTC",
   });
 
-  const beyondEvents =
-    data.events.length === 0 && (data.calCount ?? 0) > 0;
+  const hasEvents = data.events.length > 0;
+  const calCount = data.calCount ?? 0;
 
   return (
     <>
@@ -546,42 +580,49 @@ function DayView({
         <h2>{pretty}</h2>
         <span className="muted">
           {data.calCount != null
-            ? `${data.calCount} contribution${data.calCount === 1 ? "" : "s"} on the calendar`
-            : ""}
+            ? `${calCount} contribution${calCount === 1 ? "" : "s"} on the calendar`
+            : "not on the contribution calendar"}
         </span>
       </div>
 
-      <div className="stats">
-        <StatTile className="glow-cyan" icon="⬆️" value={String(data.byType.commit)} label="Commits" />
-        <StatTile className="glow-violet" icon="🔀" value={String(data.byType.pullRequest)} label="Pull requests" />
-        <StatTile className="glow-amber" icon="🐛" value={String(data.byType.issue)} label="Issues" />
-        <StatTile className="glow-green" icon="👀" value={String(data.byType.review)} label="Reviews" />
-        <StatTile className="glow-magenta" icon="📦" value={String(data.repoBars.length)} label="Projects touched" />
-      </div>
+      {hasEvents ? (
+        <>
+          <div className="stats">
+            <StatTile className="glow-cyan" icon="⬆️" value={String(data.byType.commit)} label="Commits" />
+            <StatTile className="glow-violet" icon="🔀" value={String(data.byType.pullRequest)} label="Pull requests" />
+            <StatTile className="glow-amber" icon="🐛" value={String(data.byType.issue)} label="Issues" />
+            <StatTile className="glow-green" icon="👀" value={String(data.byType.review)} label="Reviews" />
+            <StatTile className="glow-magenta" icon="📦" value={String(data.repoBars.length)} label="Projects touched" />
+          </div>
 
-      {beyondEvents && (
-        <p className="note">
-          ℹ️ The contribution calendar shows {data.calCount} contribution(s) this
-          day, but GitHub's public events feed (≈ last 90 days, ~300 events)
-          doesn't include the per-project detail for it — likely older than the
-          events window or from private contributions.
-        </p>
+          <div className="grid">
+            <div className="card col-5">
+              <h3>Projects this day</h3>
+              {data.repoBars.length ? (
+                <Bars data={data.repoBars} />
+              ) : (
+                <p className="muted">No per-project events recorded.</p>
+              )}
+            </div>
+            <div className="card col-7">
+              <h3>What happened</h3>
+              <Feed events={data.events} />
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="card day-empty">
+          <div className="day-empty-count">{calCount}</div>
+          <div className="day-empty-label">
+            contribution{calCount === 1 ? "" : "s"} on the contribution calendar
+          </div>
+          <p className="muted">
+            {calCount > 0
+              ? "Per-project and per-commit detail comes from GitHub's public events feed, which only reaches back about 90 days (roughly 300 events). This day is outside that window, so only the calendar total is available."
+              : "No public contributions recorded on this day."}
+          </p>
+        </div>
       )}
-
-      <div className="grid">
-        <div className="card col-5">
-          <h3>Projects this day</h3>
-          {data.repoBars.length ? (
-            <Bars data={data.repoBars} />
-          ) : (
-            <p className="muted">No per-project events recorded for this day.</p>
-          )}
-        </div>
-        <div className="card col-7">
-          <h3>What happened</h3>
-          <Feed events={data.events} />
-        </div>
-      </div>
     </>
   );
 }

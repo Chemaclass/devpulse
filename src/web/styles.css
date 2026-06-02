@@ -908,6 +908,29 @@ footer a { color: var(--violet); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ---------- Day detail (empty) ---------- */
+.day-empty {
+  text-align: center;
+  padding: 40px 24px;
+}
+.day-empty-count {
+  font-family: var(--font-display);
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--cyan);
+}
+.day-empty-label {
+  color: var(--text);
+  margin-top: 6px;
+  font-size: 15px;
+}
+.day-empty p {
+  max-width: 520px;
+  margin: 14px auto 0;
+  font-size: 13px;
+}
+
 /* ---------- 3D skyline ---------- */
 .card-head {
   display: flex;
