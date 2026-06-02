@@ -812,23 +812,6 @@ a:hover {
 a.pill:hover { color: var(--text); text-decoration: none; }
 
 /* ---------- States ---------- */
-.center {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--muted);
-}
-.spinner {
-  width: 46px;
-  height: 46px;
-  margin: 0 auto 18px;
-  border-radius: 50%;
-  border: 3px solid rgba(150, 165, 120, 0.2);
-  border-top-color: var(--cyan);
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
 .error {
   border-color: rgba(216, 130, 92, 0.4) !important;
   box-shadow: 0 0 30px rgba(216, 130, 92, 0.15);
