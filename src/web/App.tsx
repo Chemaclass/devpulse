@@ -13,6 +13,7 @@ import { CountUp } from "./components/CountUp.js";
 import { Feed } from "./components/Feed.js";
 import { Heatmap } from "./components/Heatmap.js";
 import { Persona } from "./components/Persona.js";
+import { useTheme } from "./theme.js";
 
 // three.js is heavy; only load it when the 3D view is shown.
 const Skyline3D = lazy(() =>
@@ -81,6 +82,21 @@ function Skeleton() {
       <div className="sk sk-heatmap" />
       <p className="sk-note muted">Pulling public contributions…</p>
     </div>
+  );
+}
+
+function ThemeToggle() {
+  const { theme, toggle } = useTheme();
+  const isDark = theme === "dark";
+  return (
+    <button
+      className="theme-toggle"
+      onClick={toggle}
+      title={isDark ? "Switch to light" : "Switch to dark"}
+      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+    >
+      {isDark ? "☀️" : "🌙"}
+    </button>
   );
 }
 
@@ -153,6 +169,7 @@ export function App() {
 
   return (
     <div className="shell">
+      <ThemeToggle />
       <header className="hero">
         <h1 className="logo">
           Dev<span className="spark">⚡</span>Pulse

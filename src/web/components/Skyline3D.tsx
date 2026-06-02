@@ -3,6 +3,7 @@ import { Canvas } from "@react-three/fiber";
 import { useMemo, useState } from "react";
 import * as THREE from "three";
 import { CalendarDay } from "../../core/types.js";
+import { useTheme } from "../theme.js";
 
 interface Props {
   days: CalendarDay[];
@@ -115,19 +116,23 @@ function Bars({
   );
 }
 
-function Ground({ numWeeks }: { numWeeks: number }) {
+function Ground({ numWeeks, color }: { numWeeks: number; color: string }) {
   // A thin slab under the city for a "map" feel.
   const w = numWeeks + 1.5;
   const d = 8.5;
   return (
     <mesh position={[0, -0.06, 0]} receiveShadow>
       <boxGeometry args={[w, 0.12, d]} />
-      <meshStandardMaterial color="#11160f" roughness={0.95} metalness={0} />
+      <meshStandardMaterial color={color} roughness={0.95} metalness={0} />
     </mesh>
   );
 }
 
 export function Skyline3D({ days, window = 371, onSelect, scaleMax }: Props) {
+  const { theme } = useTheme();
+  const light = theme === "light";
+  const bgColor = light ? "#eef1e6" : "#0f1310";
+  const groundColor = light ? "#dde3cf" : "#11160f";
   const [hover, setHover] = useState<Bar | null>(null);
   const bars = useMemo(() => buildBars(days, window), [days, window]);
   const numWeeks = bars.length ? Math.max(...bars.map((b) => b.col)) + 1 : 0;
@@ -147,11 +152,11 @@ export function Skyline3D({ days, window = 371, onSelect, scaleMax }: Props) {
         dpr={[1, 2]}
         gl={{ antialias: true }}
       >
-        <color attach="background" args={["#0f1310"]} />
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[18, 30, 12]} intensity={1.1} />
+        <color attach="background" args={[bgColor]} />
+        <ambientLight intensity={light ? 0.85 : 0.6} />
+        <directionalLight position={[18, 30, 12]} intensity={light ? 1.3 : 1.1} />
         <directionalLight position={[-20, 14, -10]} intensity={0.35} />
-        <Ground numWeeks={numWeeks} />
+        <Ground numWeeks={numWeeks} color={groundColor} />
         <Bars
           bars={bars}
           numWeeks={numWeeks}
