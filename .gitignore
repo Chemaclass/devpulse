@@ -3,6 +3,7 @@ dist
 out
 *.local
 .DS_Store
+.idea/
 .env
 .env.*
 npm-debug.log*
