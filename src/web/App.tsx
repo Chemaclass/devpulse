@@ -153,9 +153,8 @@ export function App() {
           Dev<span className="spark">⚡</span>Pulse
         </h1>
         <p className="tagline">
-          Type any GitHub username and see how much they worked — day by day,
-          project by project. Commits, PRs, issues, reviews, streaks. Public
-          data, no login.
+          Type any GitHub username and see how much they worked. Commits, PRs,
+          issues, reviews and streaks, day by day. Public data.
         </p>
         <form
           className="search"
