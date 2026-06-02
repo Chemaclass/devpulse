@@ -4,8 +4,8 @@
 
 **🔗 Live: https://chemaclass.github.io/devpulse/**
 
-**Type any GitHub username and see how much they worked — day by day, project by project.**
-Commits, pull requests, issues, reviews, streaks and a neon contribution heatmap. Public data only, no login, nothing stored.
+**Type any GitHub username and see how much they worked, day by day and project by project.**
+Commits, pull requests, issues, reviews, streaks, a rotatable 3D contribution skyline, a playful developer archetype, top languages, and light/dark themes. Public data only, no login, nothing stored.
 
 A fun, deployable web app (Vite + React + TS) with a matching Node CLI for deep JSON/Markdown exports. Built to live on GitHub Pages so anyone can paste their profile and watch their stats light up.
 
@@ -15,9 +15,14 @@ A fun, deployable web app (Vite + React + TS) with a matching Node CLI for deep 
 
 ## ✨ What it does
 
-- **Overall view** — all-time contributions, current & longest streak, active days, best day, a 12-month heatmap, plus recent activity charts and your most-active projects.
-- **Latest day** — jump straight to your most recent active day and see exactly what you shipped.
-- **Pick a day** — choose any date (or click a heatmap cell) to drill into that day's commits, PRs, issues, reviews and the projects you touched.
+- **Overall view**: all-time contributions, current and longest streak, active days, best day, recent activity charts, and your most-active projects.
+- **Developer archetype**: a fun persona (Shipper, Guardian, Machine, and more) derived from the activity mix, with chronotype, favorite day, weekend share, and peak month.
+- **3D contribution skyline**: the calendar rendered as a rotatable, zoomable city of buildings (height = contributions), with a 2D grid toggle.
+- **Latest day / Pick a day**: jump to the most recent active day, or click any cell/building to drill into that day's commits, PRs, issues, reviews, and projects.
+- **Top languages**: primary-language breakdown across public repos.
+- **Compare two users**: head-to-head metrics and two skylines on a shared height scale.
+- **Light and dark themes**, and **shareable URLs** (`?u=`, `?d=`, `?mode=`, `?vs=`).
+- **Optional token**: paste a GitHub PAT (kept in your browser session) for higher rate limits and real per-repo commit history from the last year.
 
 ## 🚀 Quick start
 
@@ -60,17 +65,19 @@ DevPulse is split into a framework-agnostic **core** consumed by two frontends �
 
 ```
                  ┌─────────────────────────── src/core ───────────────────────────┐
-  username ─────▶│ github.ts        contributions.ts                               │
-                 │  profile +        calendar (heatmap)                            │
-                 │  public events    + streaks                                     │
-                 │        └────────────┬────────────┘                              │
-                 │                 aggregate.ts  → buildReport()                   │
-                 │                     │                                           │
-                 │              getReport(username) ──▶  Report (typed object)     │
+  username ─────▶│ github.ts   contributions.ts   graphql.ts (token, optional)    │
+                 │  profile +   calendar (heatmap)  per-repo year history          │
+                 │  events +    + streaks                                          │
+                 │  languages        └──────┬──────┘                              │
+                 │                    aggregate.ts → buildReport()                 │
+                 │                    persona.ts   → derivePersona()               │
+                 │                          │                                      │
+                 │             getReport(username, fetch, token?) ──▶ Report       │
                  └─────────────────────┬───────────────────────┬─────────────────-┘
                                        │                        │
                               src/web (React)            src/cli (Node)
-                          heatmap · charts · feed      report.json + report.md
+                       skyline · charts · persona      report.json + report.md
+                       compare · themes · feed
 ```
 
 A single `Report` type (see `src/core/types.ts`) is the contract between core and UI. If you can produce a `Report`, both frontends render it.
@@ -90,16 +97,19 @@ So the **heatmap and streaks** go back years, but the **detailed project/type br
 
 ```
 src/
-  core/              # shared, browser + Node safe — no React, no Node-only APIs
+  core/              # shared, browser + Node safe (no React, no Node-only APIs)
     types.ts           # domain models + the central `Report` type
     contributions.ts   # calendar (heatmap) fetch + streak math
-    github.ts          # profile + public events fetch & normalize
+    github.ts          # profile, public events, languages fetch & normalize
+    graphql.ts         # token-only: per-repo commit history (last year)
+    persona.ts         # derivePersona(): the developer archetype
     aggregate.ts       # buildReport(): byDay / byRepo / byType
     index.ts           # getReport() one-shot + helpers (parseUsername)
   web/               # Vite + React app (the GitHub Pages site)
-    App.tsx            # state, modes (overall / latest / day), layout
-    components/        # Heatmap, Charts, Bars, Feed
-    styles.css         # the futuristic neon theme (CSS variables up top)
+    App.tsx            # state, modes, deep-linking, layout
+    theme.tsx          # light/dark context   token.tsx # session token context
+    components/        # Skyline3D, Heatmap, Charts, Bars, Feed, Persona, Compare
+    styles.css         # forest + city theme (CSS variables up top, light & dark)
   cli/               # Node CLI -> report.json + report.md
     index.ts           # arg parsing + orchestration
     markdown.ts        # Report -> Markdown
