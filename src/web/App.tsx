@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
   ContributionType,
   derivePersona,
@@ -13,6 +13,11 @@ import { CountUp } from "./components/CountUp.js";
 import { Feed } from "./components/Feed.js";
 import { Heatmap } from "./components/Heatmap.js";
 import { Persona } from "./components/Persona.js";
+
+// three.js is heavy; only load it when the 3D view is shown.
+const Skyline3D = lazy(() =>
+  import("./components/Skyline3D.js").then((m) => ({ default: m.Skyline3D })),
+);
 
 type Mode = "overall" | "latest" | "date";
 const EXAMPLES = ["torvalds", "gaearon", "sindresorhus", "chemaclass"];
@@ -357,6 +362,7 @@ function OverallView({
     .map((r) => ({ name: r.repo, value: r.total, href: r.repoUrl }));
 
   const persona = useMemo(() => derivePersona(report), [report]);
+  const [view, setView] = useState<"3d" | "grid">("3d");
 
   return (
     <>
@@ -393,8 +399,32 @@ function OverallView({
       </div>
 
       <div className="card col-12" style={{ marginBottom: 18 }}>
-        <h3>Contribution heatmap · last 12 months</h3>
-        <Heatmap days={calendar.days} onSelect={onPickDay} />
+        <div className="card-head">
+          <h3>Contributions · last 12 months</h3>
+          <div className="view-toggle">
+            <button
+              className={view === "3d" ? "active" : ""}
+              onClick={() => setView("3d")}
+            >
+              3D
+            </button>
+            <button
+              className={view === "grid" ? "active" : ""}
+              onClick={() => setView("grid")}
+            >
+              Grid
+            </button>
+          </div>
+        </div>
+        {view === "3d" ? (
+          <Suspense
+            fallback={<div className="skyline-loading muted">Rendering 3D…</div>}
+          >
+            <Skyline3D days={calendar.days} onSelect={onPickDay} />
+          </Suspense>
+        ) : (
+          <Heatmap days={calendar.days} onSelect={onPickDay} />
+        )}
       </div>
 
       <div className="section-title">

@@ -1,0 +1,156 @@
+import { OrbitControls } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
+import { useMemo, useState } from "react";
+import * as THREE from "three";
+import { CalendarDay } from "../../core/types.js";
+
+interface Props {
+  days: CalendarDay[];
+  window?: number;
+  onSelect?: (date: string) => void;
+}
+
+// Forest-green ramp, matching the 2D heatmap levels.
+const LEVEL_COLORS = ["#1b2616", "#2f5138", "#46824f", "#6fae5f", "#a7d98a"];
+
+interface Bar {
+  date: string;
+  count: number;
+  level: number;
+  col: number;
+  row: number;
+}
+
+function buildBars(days: CalendarDay[], window: number): Bar[] {
+  const today = new Date().toISOString().slice(0, 10);
+  const recent = days.filter((d) => d.date <= today).slice(-window);
+  if (!recent.length) return [];
+  const firstDow = new Date(recent[0].date + "T00:00:00Z").getUTCDay();
+  return recent.map((d, i) => {
+    const idx = i + firstDow;
+    return {
+      date: d.date,
+      count: d.count,
+      level: d.level,
+      col: Math.floor(idx / 7),
+      row: idx % 7,
+    };
+  });
+}
+
+function Bars({
+  bars,
+  numWeeks,
+  maxCount,
+  onHover,
+  onSelect,
+}: {
+  bars: Bar[];
+  numWeeks: number;
+  maxCount: number;
+  onHover: (b: Bar | null) => void;
+  onSelect?: (date: string) => void;
+}) {
+  const geometry = useMemo(() => new THREE.BoxGeometry(0.82, 1, 0.82), []);
+  const materials = useMemo(
+    () =>
+      LEVEL_COLORS.map(
+        (c, i) =>
+          new THREE.MeshStandardMaterial({
+            color: c,
+            roughness: 0.55,
+            metalness: 0.05,
+            emissive: new THREE.Color(c),
+            emissiveIntensity: i >= 3 ? 0.35 : 0.08,
+          }),
+      ),
+    [],
+  );
+
+  const offsetX = numWeeks / 2;
+  return (
+    <group>
+      {bars.map((b) => {
+        const h = b.count === 0 ? 0.08 : 0.3 + (b.count / maxCount) * 5;
+        const x = b.col - offsetX;
+        const z = b.row - 3;
+        return (
+          <mesh
+            key={b.date}
+            geometry={geometry}
+            material={materials[b.level]}
+            position={[x, h / 2, z]}
+            scale={[1, h, 1]}
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              onHover(b);
+            }}
+            onPointerOut={() => onHover(null)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect?.(b.date);
+            }}
+          />
+        );
+      })}
+    </group>
+  );
+}
+
+export function Skyline3D({ days, window = 371, onSelect }: Props) {
+  const [hover, setHover] = useState<Bar | null>(null);
+  const bars = useMemo(() => buildBars(days, window), [days, window]);
+  const numWeeks = bars.length ? Math.max(...bars.map((b) => b.col)) + 1 : 0;
+  const maxCount = Math.max(1, ...bars.map((b) => b.count));
+
+  if (!bars.length) {
+    return <p className="muted">No contributions to render.</p>;
+  }
+
+  return (
+    <div className="skyline">
+      <Canvas
+        camera={{ position: [0, 22, 34], fov: 38 }}
+        dpr={[1, 2]}
+        gl={{ antialias: true }}
+      >
+        <color attach="background" args={["#0f1310"]} />
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[18, 30, 12]} intensity={1.1} />
+        <directionalLight position={[-20, 14, -10]} intensity={0.35} />
+        <Bars
+          bars={bars}
+          numWeeks={numWeeks}
+          maxCount={maxCount}
+          onHover={setHover}
+          onSelect={onSelect}
+        />
+        <OrbitControls
+          enablePan={false}
+          enableZoom
+          minDistance={14}
+          maxDistance={60}
+          maxPolarAngle={Math.PI / 2.1}
+          autoRotate
+          autoRotateSpeed={0.6}
+        />
+      </Canvas>
+      <div className="skyline-hint">Drag to orbit · scroll to zoom</div>
+      {hover && (
+        <div className="skyline-tip">
+          <strong>{hover.count}</strong> contribution
+          {hover.count === 1 ? "" : "s"}
+          <span>
+            {new Date(hover.date + "T00:00:00Z").toLocaleDateString(undefined, {
+              weekday: "short",
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              timeZone: "UTC",
+            })}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
