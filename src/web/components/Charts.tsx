@@ -1,0 +1,135 @@
+import {
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Tooltip,
+} from "chart.js";
+import { Bar, Doughnut } from "react-chartjs-2";
+import { ContributionType, DayStats } from "../../core/types.js";
+
+ChartJS.register(
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Filler,
+  Legend,
+  Tooltip,
+);
+
+const TYPE_COLORS: Record<ContributionType, string> = {
+  commit: "#22d3ee",
+  pullRequest: "#a78bfa",
+  issue: "#fbbf24",
+  review: "#34d399",
+  other: "#8b93b8",
+};
+
+const TYPE_LABELS: Record<ContributionType, string> = {
+  commit: "Commits",
+  pullRequest: "Pull requests",
+  issue: "Issues",
+  review: "Reviews",
+  other: "Other",
+};
+
+const tickColor = "#8b93b8";
+const gridColor = "rgba(120,140,255,0.08)";
+
+export function DailyStackedChart({ byDay }: { byDay: DayStats[] }) {
+  // oldest -> newest for the timeline
+  const days = [...byDay].sort((a, b) => a.date.localeCompare(b.date));
+  const labels = days.map((d) => d.date.slice(5));
+  const types: ContributionType[] = [
+    "commit",
+    "pullRequest",
+    "issue",
+    "review",
+    "other",
+  ];
+
+  const data = {
+    labels,
+    datasets: types.map((t) => ({
+      label: TYPE_LABELS[t],
+      data: days.map((d) => d[t]),
+      backgroundColor: TYPE_COLORS[t],
+      borderRadius: 3,
+      stack: "s",
+    })),
+  };
+
+  return (
+    <Bar
+      data={data}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: tickColor, boxWidth: 12 } },
+          tooltip: { mode: "index", intersect: false },
+        },
+        scales: {
+          x: {
+            stacked: true,
+            ticks: { color: tickColor, maxRotation: 0, autoSkip: true },
+            grid: { display: false },
+          },
+          y: {
+            stacked: true,
+            ticks: { color: tickColor, precision: 0 },
+            grid: { color: gridColor },
+          },
+        },
+      }}
+    />
+  );
+}
+
+export function TypeDoughnut({
+  byType,
+}: {
+  byType: Record<ContributionType, number>;
+}) {
+  const types: ContributionType[] = [
+    "commit",
+    "pullRequest",
+    "issue",
+    "review",
+    "other",
+  ];
+  const entries = types.filter((t) => byType[t] > 0);
+  const data = {
+    labels: entries.map((t) => TYPE_LABELS[t]),
+    datasets: [
+      {
+        data: entries.map((t) => byType[t]),
+        backgroundColor: entries.map((t) => TYPE_COLORS[t]),
+        borderColor: "rgba(5,6,12,0.6)",
+        borderWidth: 2,
+        hoverOffset: 8,
+      },
+    ],
+  };
+  return (
+    <Doughnut
+      data={data}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "62%",
+        plugins: {
+          legend: { position: "bottom", labels: { color: tickColor, boxWidth: 12 } },
+        },
+      }}
+    />
+  );
+}

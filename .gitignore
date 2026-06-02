@@ -1,0 +1,12 @@
+node_modules
+dist
+out
+*.local
+.DS_Store
+.env
+.env.*
+npm-debug.log*
+yarn-error.log*
+.vite
+*.tsbuildinfo
+vite.config.ts.timestamp-*.mjs
