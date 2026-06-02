@@ -215,7 +215,7 @@ export function derivePersona(report: Report): Persona {
     traits.push({
       icon: weekendShare >= 0.3 ? "🏖️" : "💼",
       label: weekendShare >= 0.3 ? "Weekend Warrior" : "Weekday Worker",
-      value: `${Math.round(weekendShare * 100)}% on weekends`,
+      value: `${Math.round(weekendShare * 100)}% of contributions on weekends`,
     });
   }
 
