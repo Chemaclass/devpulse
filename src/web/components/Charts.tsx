@@ -30,11 +30,11 @@ ChartJS.register(
 );
 
 const TYPE_COLORS: Record<ContributionType, string> = {
-  commit: "#22d3ee",
-  pullRequest: "#a78bfa",
-  issue: "#fbbf24",
-  review: "#34d399",
-  other: "#8b93b8",
+  commit: "#74b06a", // leaf green
+  pullRequest: "#6f8fb0", // dusk sky
+  issue: "#e3b341", // golden hour
+  review: "#5aa17a", // sage
+  other: "#9aa489", // muted moss
 };
 
 const TYPE_LABELS: Record<ContributionType, string> = {
@@ -45,8 +45,8 @@ const TYPE_LABELS: Record<ContributionType, string> = {
   other: "Other",
 };
 
-const tickColor = "#8b93b8";
-const gridColor = "rgba(120,140,255,0.08)";
+const tickColor = "#9aa489";
+const gridColor = "rgba(150,165,120,0.1)";
 
 export function DailyStackedChart({ byDay }: { byDay: DayStats[] }) {
   // oldest -> newest for the timeline
