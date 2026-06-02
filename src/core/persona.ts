@@ -33,6 +33,21 @@ const WEEKDAY_NAMES = [
   "Saturday",
 ];
 
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 function chronotype(hour: number): { emoji: string; label: string } {
   if (hour >= 0 && hour < 5) return { emoji: "🦉", label: "Night Owl" };
   if (hour >= 5 && hour < 9) return { emoji: "🐓", label: "Early Bird" };
@@ -85,6 +100,18 @@ function weekdayProfileFromCalendar(days: CalendarDay[]): WeekdayProfile {
     favWeekday: buckets[fd] > 0 ? fd : null,
     weekendShare: total ? weekend / total : 0,
   };
+}
+
+/** Month of the year with the most contributions, count-weighted. */
+function peakMonthFromCalendar(days: CalendarDay[]): number | null {
+  const buckets = new Array(12).fill(0);
+  for (const d of days) {
+    if (d.count <= 0) continue;
+    const m = new Date(d.date + "T00:00:00Z").getUTCMonth();
+    if (!Number.isNaN(m)) buckets[m] += d.count;
+  }
+  const m = argmax(buckets);
+  return buckets[m] > 0 ? m : null;
 }
 
 function pad2(n: number): string {
@@ -192,13 +219,14 @@ export function derivePersona(report: Report): Persona {
     });
   }
 
-  if (calendar.currentStreak > 0) {
+  // Peak month parallels favorite day and is not surfaced anywhere else
+  // (the streak already has its own stat tile).
+  const peakMonth = peakMonthFromCalendar(calendar.days);
+  if (peakMonth != null) {
     traits.push({
-      icon: "🔥",
-      label: "On a streak",
-      value: `${calendar.currentStreak} day${
-        calendar.currentStreak === 1 ? "" : "s"
-      } (best ${calendar.longestStreak})`,
+      icon: "🗓️",
+      label: "Peak month",
+      value: MONTH_NAMES[peakMonth],
     });
   }
 
