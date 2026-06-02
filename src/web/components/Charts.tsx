@@ -11,7 +11,11 @@ import {
   Tooltip,
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
-import { ContributionType, DayStats } from "../../core/types.js";
+import {
+  CONTRIBUTION_TYPES,
+  ContributionType,
+  DayStats,
+} from "../../core/types.js";
 
 ChartJS.register(
   ArcElement,
@@ -48,17 +52,10 @@ export function DailyStackedChart({ byDay }: { byDay: DayStats[] }) {
   // oldest -> newest for the timeline
   const days = [...byDay].sort((a, b) => a.date.localeCompare(b.date));
   const labels = days.map((d) => d.date.slice(5));
-  const types: ContributionType[] = [
-    "commit",
-    "pullRequest",
-    "issue",
-    "review",
-    "other",
-  ];
 
   const data = {
     labels,
-    datasets: types.map((t) => ({
+    datasets: CONTRIBUTION_TYPES.map((t) => ({
       label: TYPE_LABELS[t],
       data: days.map((d) => d[t]),
       backgroundColor: TYPE_COLORS[t],
@@ -99,14 +96,7 @@ export function TypeDoughnut({
 }: {
   byType: Record<ContributionType, number>;
 }) {
-  const types: ContributionType[] = [
-    "commit",
-    "pullRequest",
-    "issue",
-    "review",
-    "other",
-  ];
-  const entries = types.filter((t) => byType[t] > 0);
+  const entries = CONTRIBUTION_TYPES.filter((t) => byType[t] > 0);
   const data = {
     labels: entries.map((t) => TYPE_LABELS[t]),
     datasets: [

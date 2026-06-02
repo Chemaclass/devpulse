@@ -36,41 +36,38 @@ function chronotype(hour: number): { emoji: string; label: string } {
   return { emoji: "🌙", label: "Late Nighter" };
 }
 
-function peakHour(events: ActivityEvent[]): number | null {
-  if (!events.length) return null;
-  const buckets = new Array(24).fill(0);
-  for (const e of events) {
-    const h = new Date(e.datetime).getUTCHours();
-    if (!Number.isNaN(h)) buckets[h] += Math.max(1, e.weight);
-  }
-  let best = 0;
-  for (let h = 1; h < 24; h++) if (buckets[h] > buckets[best]) best = h;
-  return buckets[best] > 0 ? best : null;
+interface Rhythm {
+  peakHour: number | null;
+  favWeekday: number | null;
+  weekendShare: number;
 }
 
-function favoriteWeekday(events: ActivityEvent[]): number | null {
-  if (!events.length) return null;
-  const buckets = new Array(7).fill(0);
-  for (const e of events) {
-    const d = new Date(e.datetime).getUTCDay();
-    if (!Number.isNaN(d)) buckets[d] += Math.max(1, e.weight);
-  }
-  let best = 0;
-  for (let d = 1; d < 7; d++) if (buckets[d] > buckets[best]) best = d;
-  return buckets[best] > 0 ? best : null;
-}
-
-function weekendShare(events: ActivityEvent[]): number {
-  if (!events.length) return 0;
+/** Single pass over events: peak hour, favorite weekday, weekend share. */
+function analyzeRhythm(events: ActivityEvent[]): Rhythm {
+  const hours = new Array(24).fill(0);
+  const days = new Array(7).fill(0);
   let weekend = 0;
   let total = 0;
   for (const e of events) {
-    const d = new Date(e.datetime).getUTCDay();
+    const t = new Date(e.datetime);
+    const h = t.getUTCHours();
+    const d = t.getUTCDay();
+    if (Number.isNaN(h) || Number.isNaN(d)) continue;
     const w = Math.max(1, e.weight);
+    hours[h] += w;
+    days[d] += w;
     total += w;
     if (d === 0 || d === 6) weekend += w;
   }
-  return total ? weekend / total : 0;
+  const argmax = (a: number[]) =>
+    a.reduce((best, v, i) => (v > a[best] ? i : best), 0);
+  const ph = argmax(hours);
+  const fd = argmax(days);
+  return {
+    peakHour: hours[ph] > 0 ? ph : null,
+    favWeekday: days[fd] > 0 ? fd : null,
+    weekendShare: total ? weekend / total : 0,
+  };
 }
 
 function pad2(n: number): string {
@@ -149,32 +146,30 @@ export function derivePersona(report: Report): Persona {
   const arch = pickArchetype(byType, total);
 
   const traits: PersonaTrait[] = [];
+  const { peakHour, favWeekday, weekendShare } = analyzeRhythm(events);
 
-  const ph = peakHour(events);
-  if (ph != null) {
-    const chrono = chronotype(ph);
+  if (peakHour != null) {
+    const chrono = chronotype(peakHour);
     traits.push({
       icon: chrono.emoji,
       label: chrono.label,
-      value: `Peak ${pad2(ph)}:00 to ${pad2((ph + 1) % 24)}:00 UTC`,
+      value: `Peak ${pad2(peakHour)}:00 to ${pad2((peakHour + 1) % 24)}:00 UTC`,
     });
   }
 
-  const fav = favoriteWeekday(events);
-  if (fav != null) {
+  if (favWeekday != null) {
     traits.push({
       icon: "📆",
       label: "Favorite day",
-      value: WEEKDAY_NAMES[fav],
+      value: WEEKDAY_NAMES[favWeekday],
     });
   }
 
-  const wknd = weekendShare(events);
   if (events.length) {
     traits.push({
-      icon: wknd >= 0.3 ? "🏖️" : "💼",
-      label: wknd >= 0.3 ? "Weekend Warrior" : "Weekday Worker",
-      value: `${Math.round(wknd * 100)}% on weekends`,
+      icon: weekendShare >= 0.3 ? "🏖️" : "💼",
+      label: weekendShare >= 0.3 ? "Weekend Warrior" : "Weekday Worker",
+      value: `${Math.round(weekendShare * 100)}% on weekends`,
     });
   }
 
