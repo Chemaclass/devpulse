@@ -1,7 +1,12 @@
 // Derives a fun "developer archetype" from a Report.
 // Pure and dependency-free so both the web app and the CLI can use it.
 
-import { ActivityEvent, ContributionType, Report } from "./types.js";
+import {
+  ActivityEvent,
+  CalendarDay,
+  ContributionType,
+  Report,
+} from "./types.js";
 
 export interface PersonaTrait {
   icon: string;
@@ -36,36 +41,48 @@ function chronotype(hour: number): { emoji: string; label: string } {
   return { emoji: "🌙", label: "Late Nighter" };
 }
 
-interface Rhythm {
-  peakHour: number | null;
+const argmax = (a: number[]) =>
+  a.reduce((best, v, i) => (v > a[best] ? i : best), 0);
+
+/**
+ * Peak hour of day from the detailed events feed. This is the only source
+ * with timestamps, so it can be null when there are no recent events.
+ */
+function peakHourFromEvents(events: ActivityEvent[]): number | null {
+  const hours = new Array(24).fill(0);
+  for (const e of events) {
+    const h = new Date(e.datetime).getUTCHours();
+    if (!Number.isNaN(h)) hours[h] += Math.max(1, e.weight);
+  }
+  const h = argmax(hours);
+  return hours[h] > 0 ? h : null;
+}
+
+interface WeekdayProfile {
   favWeekday: number | null;
   weekendShare: number;
 }
 
-/** Single pass over events: peak hour, favorite weekday, weekend share. */
-function analyzeRhythm(events: ActivityEvent[]): Rhythm {
-  const hours = new Array(24).fill(0);
-  const days = new Array(7).fill(0);
+/**
+ * Favorite weekday and weekend share from the full contribution calendar
+ * (count-weighted). Far more representative than the ~90-day events feed,
+ * which can be a single day and skew the numbers.
+ */
+function weekdayProfileFromCalendar(days: CalendarDay[]): WeekdayProfile {
+  const buckets = new Array(7).fill(0);
   let weekend = 0;
   let total = 0;
-  for (const e of events) {
-    const t = new Date(e.datetime);
-    const h = t.getUTCHours();
-    const d = t.getUTCDay();
-    if (Number.isNaN(h) || Number.isNaN(d)) continue;
-    const w = Math.max(1, e.weight);
-    hours[h] += w;
-    days[d] += w;
-    total += w;
-    if (d === 0 || d === 6) weekend += w;
+  for (const d of days) {
+    if (d.count <= 0) continue;
+    const dow = new Date(d.date + "T00:00:00Z").getUTCDay();
+    if (Number.isNaN(dow)) continue;
+    buckets[dow] += d.count;
+    total += d.count;
+    if (dow === 0 || dow === 6) weekend += d.count;
   }
-  const argmax = (a: number[]) =>
-    a.reduce((best, v, i) => (v > a[best] ? i : best), 0);
-  const ph = argmax(hours);
-  const fd = argmax(days);
+  const fd = argmax(buckets);
   return {
-    peakHour: hours[ph] > 0 ? ph : null,
-    favWeekday: days[fd] > 0 ? fd : null,
+    favWeekday: buckets[fd] > 0 ? fd : null,
     weekendShare: total ? weekend / total : 0,
   };
 }
@@ -146,8 +163,9 @@ export function derivePersona(report: Report): Persona {
   const arch = pickArchetype(byType, total);
 
   const traits: PersonaTrait[] = [];
-  const { peakHour, favWeekday, weekendShare } = analyzeRhythm(events);
 
+  // Peak hour: only the events feed carries timestamps.
+  const peakHour = peakHourFromEvents(events);
   if (peakHour != null) {
     const chrono = chronotype(peakHour);
     traits.push({
@@ -157,15 +175,16 @@ export function derivePersona(report: Report): Persona {
     });
   }
 
+  // Weekday rhythm: from the full calendar, not the tiny events sample.
+  const { favWeekday, weekendShare } = weekdayProfileFromCalendar(
+    calendar.days,
+  );
   if (favWeekday != null) {
     traits.push({
       icon: "📆",
       label: "Favorite day",
       value: WEEKDAY_NAMES[favWeekday],
     });
-  }
-
-  if (events.length) {
     traits.push({
       icon: weekendShare >= 0.3 ? "🏖️" : "💼",
       label: weekendShare >= 0.3 ? "Weekend Warrior" : "Weekday Worker",

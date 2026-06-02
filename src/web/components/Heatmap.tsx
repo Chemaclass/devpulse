@@ -30,7 +30,14 @@ export function Heatmap({
 }: Props) {
   const [hover, setHover] = useState<Hover | null>(null);
 
-  const recent = useMemo(() => days.slice(-window), [days, window]);
+  const recent = useMemo(() => {
+    // The contributions API pads the calendar to year-end with empty future
+    // days. Drop anything after today so the grid ends "now" instead of
+    // trailing months of blanks (which also garbled the month labels).
+    const today = new Date().toISOString().slice(0, 10);
+    const upToToday = days.filter((d) => d.date <= today);
+    return upToToday.slice(-window);
+  }, [days, window]);
   const streaks = useMemo(() => {
     const total = recent.reduce((s, d) => s + d.count, 0);
     return { total, ...computeStreaks(recent) };
@@ -57,10 +64,13 @@ export function Heatmap({
       const cell = cells[col * 7];
       if (!cell) continue;
       const month = new Date(cell.date + "T00:00:00Z").getUTCMonth();
-      if (month !== lastMonth) {
-        labels.push({ col, text: MONTHS[month] });
-        lastMonth = month;
-      }
+      if (month === lastMonth) continue;
+      lastMonth = month;
+      // Skip labels that would crowd the previous one (e.g. a partial first
+      // column), so adjacent month names never overlap.
+      const prev = labels[labels.length - 1];
+      if (prev && col - prev.col < 3) continue;
+      labels.push({ col, text: MONTHS[month] });
     }
     return labels;
   }, [cells, numWeeks]);
