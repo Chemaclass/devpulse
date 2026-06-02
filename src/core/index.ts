@@ -7,6 +7,8 @@ export * from "./types.js";
 export { buildReport } from "./aggregate.js";
 export { fetchCalendar, summarizeCalendar } from "./contributions.js";
 export { fetchProfile, fetchPublicEvents } from "./github.js";
+export { derivePersona } from "./persona.js";
+export type { Persona, PersonaTrait } from "./persona.js";
 
 /**
  * One-shot: fetch every public source for a username and assemble a Report.

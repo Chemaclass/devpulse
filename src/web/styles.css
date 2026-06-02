@@ -263,6 +263,104 @@ a:hover {
   .col-8, .col-7, .col-6, .col-5, .col-4, .col-3 { grid-column: span 12; }
 }
 
+/* ---------- Persona card ---------- */
+.persona {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  --accent: var(--cyan);
+}
+.persona.glow-cyan { --accent: var(--cyan); }
+.persona.glow-magenta { --accent: var(--magenta); }
+.persona.glow-violet { --accent: var(--violet); }
+.persona.glow-green { --accent: var(--green); }
+.persona.glow-amber { --accent: var(--amber); }
+.persona::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    600px circle at 0% 0%,
+    color-mix(in srgb, var(--accent) 18%, transparent),
+    transparent 60%
+  );
+  pointer-events: none;
+}
+.persona-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  position: relative;
+}
+.persona-emoji {
+  font-size: 52px;
+  line-height: 1;
+  filter: drop-shadow(0 0 16px color-mix(in srgb, var(--accent) 70%, transparent));
+  animation: persona-float 3.5s ease-in-out infinite;
+}
+@keyframes persona-float {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-6px) rotate(3deg); }
+}
+.persona-kicker {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.persona-title {
+  margin: 2px 0 4px;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent);
+  text-shadow: 0 0 20px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.persona-tagline {
+  margin: 0;
+  color: var(--text);
+  opacity: 0.85;
+  font-size: 14px;
+}
+.persona-traits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+  position: relative;
+}
+.persona-trait {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(120, 140, 255, 0.06);
+  border: 1px solid var(--panel-border);
+}
+.persona-trait .pt-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.persona-trait .pt-label {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.persona-trait .pt-value {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+  .persona-emoji { animation: none; }
+}
+
 /* ---------- Stat tiles ---------- */
 .stats {
   display: grid;
@@ -312,31 +410,106 @@ a:hover {
 
 /* ---------- Heatmap ---------- */
 .heatmap-wrap {
+  padding-bottom: 6px;
+}
+.heatmap-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.heatmap-stats .hm-stat strong {
+  color: var(--text);
+  font-size: 16px;
+  margin-right: 4px;
+}
+.heatmap-scroll {
   overflow-x: auto;
   padding-bottom: 6px;
+}
+.heatmap-months {
+  display: grid;
+  gap: 3px;
+  margin-left: 30px;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.heatmap-months span {
+  grid-row: 1;
+  white-space: nowrap;
+}
+.heatmap-body {
+  display: flex;
+  gap: 6px;
+}
+.heatmap-weekdays {
+  display: grid;
+  grid-template-rows: repeat(7, 12px);
+  gap: 3px;
+  width: 24px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.heatmap-weekdays span {
+  line-height: 12px;
+  text-align: right;
 }
 .heatmap {
   display: grid;
   grid-auto-flow: column;
   grid-template-rows: repeat(7, 12px);
   gap: 3px;
+  width: max-content;
 }
 .heatmap .cell {
   width: 12px;
   height: 12px;
   border-radius: 3px;
   background: rgba(120, 140, 255, 0.08);
-  transition: transform 0.1s ease;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  opacity: 0;
+  transform: scale(0.4);
+  animation: hm-pop 0.35s ease forwards;
+}
+.heatmap .cell.pad {
+  opacity: 0;
+  animation: none;
 }
 .heatmap .cell:hover {
-  transform: scale(1.4);
+  transform: scale(1.5);
   outline: 1px solid var(--text);
+  z-index: 2;
 }
+.heatmap .cell.l0 { background: rgba(120, 140, 255, 0.08); }
 .heatmap .cell.l1 { background: #1d6e7a; }
 .heatmap .cell.l2 { background: #1aa3b8; }
 .heatmap .cell.l3 { background: #22d3ee; box-shadow: 0 0 6px rgba(34,211,238,0.5); }
-.heatmap .cell.l4 { background: #a7f3ff; box-shadow: 0 0 10px rgba(34,211,238,0.8); }
+.heatmap .cell.l4 {
+  background: #a7f3ff;
+  box-shadow: 0 0 10px rgba(34,211,238,0.8);
+  animation: hm-pop 0.35s ease forwards, hm-pulse 2.4s ease-in-out infinite 0.5s;
+}
 .heatmap .cell.sel { outline: 2px solid var(--magenta); }
+
+@keyframes hm-pop {
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes hm-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(34,211,238,0.6); }
+  50% { box-shadow: 0 0 16px rgba(34,211,238,1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .heatmap .cell {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+  .heatmap .cell.l4 { animation: none; }
+}
+
 .legend {
   display: flex;
   align-items: center;
@@ -345,7 +518,48 @@ a:hover {
   font-size: 12px;
   margin-top: 10px;
 }
-.legend .cell { width: 12px; height: 12px; border-radius: 3px; }
+.legend .cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  opacity: 1;
+  transform: none;
+  animation: none;
+}
+
+/* Rich hover tooltip */
+.heatmap-tip {
+  position: fixed;
+  z-index: 50;
+  transform: translate(-50%, calc(-100% - 12px));
+  pointer-events: none;
+  background: rgba(10, 14, 30, 0.96);
+  border: 1px solid rgba(120, 140, 255, 0.25);
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+.heatmap-tip .tip-count {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.heatmap-tip .tip-date {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.heatmap-tip .tip-bar {
+  height: 3px;
+  border-radius: 2px;
+  margin-top: 6px;
+  background: rgba(120, 140, 255, 0.15);
+}
+.heatmap-tip .tip-bar.l1 { background: #1d6e7a; }
+.heatmap-tip .tip-bar.l2 { background: #1aa3b8; }
+.heatmap-tip .tip-bar.l3 { background: #22d3ee; }
+.heatmap-tip .tip-bar.l4 { background: #a7f3ff; }
 
 /* ---------- Bars ---------- */
 .bars {

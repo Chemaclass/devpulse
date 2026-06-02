@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   ContributionType,
+  derivePersona,
   getReport,
   GitHubError,
   parseUsername,
@@ -10,6 +11,7 @@ import { Bars, BarDatum } from "./components/Bars.js";
 import { DailyStackedChart, TypeDoughnut } from "./components/Charts.js";
 import { Feed } from "./components/Feed.js";
 import { Heatmap } from "./components/Heatmap.js";
+import { Persona } from "./components/Persona.js";
 
 type Mode = "overall" | "latest" | "date";
 const EXAMPLES = ["torvalds", "gaearon", "sindresorhus", "chemaclass"];
@@ -237,8 +239,12 @@ function OverallView({
     .slice(0, 10)
     .map((r) => ({ name: r.repo, value: r.total, href: r.repoUrl }));
 
+  const persona = useMemo(() => derivePersona(report), [report]);
+
   return (
     <>
+      <Persona persona={persona} login={report.profile.login} />
+
       <div className="stats">
         <StatTile
           className="glow-cyan"

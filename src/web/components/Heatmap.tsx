@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { CalendarDay } from "../../core/types.js";
 
 interface Props {
@@ -8,51 +9,191 @@ interface Props {
   onSelect?: (date: string) => void;
 }
 
+const WEEKDAYS = ["", "Mon", "", "Wed", "", "Fri", ""];
+const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+interface Hover {
+  day: CalendarDay;
+  x: number;
+  y: number;
+}
+
+interface Streaks {
+  total: number;
+  current: number;
+  longest: number;
+}
+
+function computeStreaks(days: CalendarDay[]): Streaks {
+  let total = 0;
+  let longest = 0;
+  let run = 0;
+  for (const d of days) {
+    total += d.count;
+    if (d.count > 0) {
+      run += 1;
+      if (run > longest) longest = run;
+    } else {
+      run = 0;
+    }
+  }
+  // current streak: count back from the most recent day
+  let current = 0;
+  for (let i = days.length - 1; i >= 0; i--) {
+    if (days[i].count > 0) current += 1;
+    else break;
+  }
+  return { total, current, longest };
+}
+
 export function Heatmap({
   days,
   window = 371,
   selectedDate,
   onSelect,
 }: Props) {
-  const recent = days.slice(-window);
+  const [hover, setHover] = useState<Hover | null>(null);
+
+  const recent = useMemo(() => days.slice(-window), [days, window]);
+  const streaks = useMemo(() => computeStreaks(recent), [recent]);
+
   // Pad the start so the first column begins on a Sunday-aligned grid.
-  const cells: (CalendarDay | null)[] = [];
-  if (recent.length) {
-    const firstDow = new Date(recent[0].date + "T00:00:00Z").getUTCDay();
-    for (let i = 0; i < firstDow; i++) cells.push(null);
+  const cells: (CalendarDay | null)[] = useMemo(() => {
+    const out: (CalendarDay | null)[] = [];
+    if (recent.length) {
+      const firstDow = new Date(recent[0].date + "T00:00:00Z").getUTCDay();
+      for (let i = 0; i < firstDow; i++) out.push(null);
+    }
+    out.push(...recent);
+    return out;
+  }, [recent]);
+
+  const numWeeks = Math.ceil(cells.length / 7);
+
+  // Month labels: place one when the month changes at the top of a column.
+  const monthLabels = useMemo(() => {
+    const labels: { col: number; text: string }[] = [];
+    let lastMonth = -1;
+    for (let col = 0; col < numWeeks; col++) {
+      const cell = cells[col * 7];
+      if (!cell) continue;
+      const month = new Date(cell.date + "T00:00:00Z").getUTCMonth();
+      if (month !== lastMonth) {
+        labels.push({ col, text: MONTHS[month] });
+        lastMonth = month;
+      }
+    }
+    return labels;
+  }, [cells, numWeeks]);
+
+  function showTip(day: CalendarDay, e: React.MouseEvent) {
+    setHover({ day, x: e.clientX, y: e.clientY });
   }
-  cells.push(...recent);
 
   return (
     <div className="heatmap-wrap">
-      <div className="heatmap">
-        {cells.map((d, i) =>
-          d ? (
-            <div
-              key={d.date}
-              className={`cell l${d.level}${
-                selectedDate === d.date ? " sel" : ""
-              }`}
-              title={`${d.date}: ${d.count} contribution${
-                d.count === 1 ? "" : "s"
-              }`}
-              onClick={() => onSelect?.(d.date)}
-              style={{ cursor: onSelect ? "pointer" : "default" }}
-            />
-          ) : (
-            <div key={`pad-${i}`} className="cell" style={{ opacity: 0 }} />
-          ),
-        )}
+      <div className="heatmap-stats">
+        <span className="hm-stat">
+          <strong>{streaks.total.toLocaleString()}</strong> contributions
+        </span>
+        <span className="hm-stat">
+          <strong>{streaks.current}</strong> day current streak
+        </span>
+        <span className="hm-stat">
+          <strong>{streaks.longest}</strong> day longest streak
+        </span>
       </div>
+
+      <div className="heatmap-scroll">
+        <div
+          className="heatmap-months"
+          style={{
+            gridTemplateColumns: `repeat(${numWeeks}, 12px)`,
+          }}
+        >
+          {monthLabels.map((m) => (
+            <span
+              key={`${m.text}-${m.col}`}
+              style={{ gridColumnStart: m.col + 1 }}
+            >
+              {m.text}
+            </span>
+          ))}
+        </div>
+
+        <div className="heatmap-body">
+          <div className="heatmap-weekdays">
+            {WEEKDAYS.map((w, i) => (
+              <span key={i}>{w}</span>
+            ))}
+          </div>
+
+          <div className="heatmap">
+            {cells.map((d, i) => {
+              const col = Math.floor(i / 7);
+              const row = i % 7;
+              const delay = (col + row) * 12;
+              return d ? (
+                <div
+                  key={d.date}
+                  className={`cell l${d.level}${
+                    selectedDate === d.date ? " sel" : ""
+                  }`}
+                  style={{
+                    cursor: onSelect ? "pointer" : "default",
+                    animationDelay: `${delay}ms`,
+                  }}
+                  onClick={() => onSelect?.(d.date)}
+                  onMouseEnter={(e) => showTip(d, e)}
+                  onMouseMove={(e) => showTip(d, e)}
+                  onMouseLeave={() => setHover(null)}
+                />
+              ) : (
+                <div key={`pad-${i}`} className="cell pad" />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       <div className="legend">
         <span>Less</span>
-        <span className="cell" />
+        <span className="cell l0" />
         <span className="cell l1" />
         <span className="cell l2" />
         <span className="cell l3" />
         <span className="cell l4" />
         <span>More</span>
       </div>
+
+      {hover && (
+        <div
+          className="heatmap-tip"
+          style={{ left: hover.x, top: hover.y }}
+          role="tooltip"
+        >
+          <div className="tip-count">
+            {hover.day.count} contribution
+            {hover.day.count === 1 ? "" : "s"}
+          </div>
+          <div className="tip-date">
+            {new Date(hover.day.date + "T00:00:00Z").toLocaleDateString(
+              undefined,
+              {
+                weekday: "long",
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                timeZone: "UTC",
+              },
+            )}
+          </div>
+          <div className={`tip-bar l${hover.day.level}`} />
+        </div>
+      )}
     </div>
   );
 }

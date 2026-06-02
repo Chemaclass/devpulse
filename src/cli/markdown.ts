@@ -1,3 +1,4 @@
+import { derivePersona } from "../core/persona.js";
 import { Report } from "../core/types.js";
 
 function bar(value: number, max: number, width = 24): string {
@@ -18,6 +19,16 @@ export function toMarkdown(report: Report): string {
   if (profile.bio) lines.push(`> ${profile.bio}`);
   lines.push("");
   lines.push(`_Generated ${report.generatedAt}_`);
+  lines.push("");
+
+  const persona = derivePersona(report);
+  lines.push(`## ${persona.emoji} ${persona.title}`);
+  lines.push("");
+  lines.push(`_${persona.tagline}_`);
+  lines.push("");
+  for (const t of persona.traits) {
+    lines.push(`- ${t.icon} **${t.label}:** ${t.value}`);
+  }
   lines.push("");
 
   lines.push(`## All-time contributions`);
