@@ -75,7 +75,15 @@ export function summarizeCalendar(
   };
 }
 
-function computeStreaks(days: CalendarDay[]): {
+/** Today's date (UTC) as YYYY-MM-DD. */
+function todayUTC(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function computeStreaks(
+  days: CalendarDay[],
+  today: string = todayUTC(),
+): {
   current: number;
   longest: number;
 } {
@@ -90,17 +98,19 @@ function computeStreaks(days: CalendarDay[]): {
     }
   }
 
-  // Current streak: walk backwards from the last day. Allow the most recent
-  // day to be empty (today may simply not have activity yet) without breaking.
+  // Current streak: walk backwards counting consecutive active days. The API
+  // pads the calendar with future days (and today may have no activity yet),
+  // so skip any day on/after today that is empty — but break the moment a
+  // *past* day has no contributions.
   let current = 0;
   for (let i = days.length - 1; i >= 0; i--) {
     const d = days[i];
     if (d.count > 0) {
       current += 1;
-    } else if (i === days.length - 1) {
-      continue; // today with no contributions yet — keep counting back
+    } else if (d.date >= today) {
+      continue; // future padding or an empty today — not a break yet
     } else {
-      break;
+      break; // a past day with no activity ends the streak
     }
   }
 

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { computeStreaks } from "../../core/contributions.js";
 import { CalendarDay } from "../../core/types.js";
 
 interface Props {
@@ -21,34 +22,6 @@ interface Hover {
   y: number;
 }
 
-interface Streaks {
-  total: number;
-  current: number;
-  longest: number;
-}
-
-function computeStreaks(days: CalendarDay[]): Streaks {
-  let total = 0;
-  let longest = 0;
-  let run = 0;
-  for (const d of days) {
-    total += d.count;
-    if (d.count > 0) {
-      run += 1;
-      if (run > longest) longest = run;
-    } else {
-      run = 0;
-    }
-  }
-  // current streak: count back from the most recent day
-  let current = 0;
-  for (let i = days.length - 1; i >= 0; i--) {
-    if (days[i].count > 0) current += 1;
-    else break;
-  }
-  return { total, current, longest };
-}
-
 export function Heatmap({
   days,
   window = 371,
@@ -58,7 +31,10 @@ export function Heatmap({
   const [hover, setHover] = useState<Hover | null>(null);
 
   const recent = useMemo(() => days.slice(-window), [days, window]);
-  const streaks = useMemo(() => computeStreaks(recent), [recent]);
+  const streaks = useMemo(() => {
+    const total = recent.reduce((s, d) => s + d.count, 0);
+    return { total, ...computeStreaks(recent) };
+  }, [recent]);
 
   // Pad the start so the first column begins on a Sunday-aligned grid.
   const cells: (CalendarDay | null)[] = useMemo(() => {
