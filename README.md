@@ -1,5 +1,9 @@
 # DevPulse ⚡
 
+[![Deploy to GitHub Pages](https://github.com/Chemaclass/devpulse/actions/workflows/deploy.yml/badge.svg)](https://github.com/Chemaclass/devpulse/actions/workflows/deploy.yml)
+
+**🔗 Live: https://chemaclass.github.io/devpulse/**
+
 **Type any GitHub username and see how much they worked — day by day, project by project.**
 Commits, pull requests, issues, reviews, streaks and a neon contribution heatmap. Public data only, no login, nothing stored.
 
