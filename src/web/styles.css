@@ -154,6 +154,24 @@ a:hover {
   text-decoration: underline;
 }
 
+/* ---------- Share button ---------- */
+.share-btn {
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+.share-btn:hover {
+  border-color: var(--cyan);
+  transform: translateY(-1px);
+}
+
 /* ---------- Mode toggle ---------- */
 .modes {
   display: inline-flex;
@@ -590,6 +608,15 @@ a:hover {
   border-radius: 999px;
   background: linear-gradient(90deg, var(--cyan), var(--magenta));
   box-shadow: 0 0 12px rgba(244, 114, 208, 0.4);
+  transform-origin: left;
+  animation: bar-grow 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar-fill { animation: none; }
 }
 .bar-row .count {
   text-align: right;
@@ -618,21 +645,45 @@ a:hover {
 .feed-item:hover {
   border-color: var(--panel-border);
 }
-.feed-item .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-top: 6px;
+.feed-item .feed-icon {
+  font-size: 15px;
+  line-height: 1;
+  margin-top: 2px;
   flex: none;
+  width: 22px;
+  text-align: center;
 }
-.t-commit { background: var(--cyan); }
-.t-pullRequest { background: var(--violet); }
-.t-issue { background: var(--amber); }
-.t-review { background: var(--green); }
-.t-other { background: var(--muted); }
 .feed-item .body { flex: 1; min-width: 0; }
-.feed-item .title { font-size: 14px; }
-.feed-item .meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.feed-item .title {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.feed-item .meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.feed-item .when { font-variant-numeric: tabular-nums; }
+.type-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+.type-tag.t-commit { color: var(--cyan); }
+.type-tag.t-pullRequest { color: var(--violet); }
+.type-tag.t-issue { color: var(--amber); }
+.type-tag.t-review { color: var(--green); }
+.type-tag.t-other { color: var(--muted); }
 .pill {
   display: inline-block;
   font-size: 11px;
@@ -641,6 +692,7 @@ a:hover {
   background: rgba(120, 140, 255, 0.12);
   color: var(--muted);
 }
+a.pill:hover { color: var(--text); text-decoration: none; }
 
 /* ---------- States ---------- */
 .center {

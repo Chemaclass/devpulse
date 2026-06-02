@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ContributionType,
   derivePersona,
@@ -16,6 +16,33 @@ import { Persona } from "./components/Persona.js";
 type Mode = "overall" | "latest" | "date";
 const EXAMPLES = ["torvalds", "gaearon", "sindresorhus", "chemaclass"];
 
+/** Reflect the current username in the URL so results are shareable. */
+function syncUrl(username: string) {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("u") === username) return;
+  params.set("u", username);
+  window.history.pushState({}, "", `?${params.toString()}`);
+}
+
+function ShareButton({ login }: { login: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    const url = `${window.location.origin}${window.location.pathname}?u=${login}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      /* clipboard blocked, ignore */
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+  return (
+    <button className="share-btn" onClick={copy} title="Copy a link to this report">
+      {copied ? "✓ Copied" : "🔗 Share"}
+    </button>
+  );
+}
+
 export function App() {
   const [query, setQuery] = useState("");
   const [report, setReport] = useState<Report | null>(null);
@@ -27,6 +54,7 @@ export function App() {
   async function run(raw: string) {
     const username = parseUsername(raw);
     if (!username) return;
+    syncUrl(username);
     setLoading(true);
     setError(null);
     setReport(null);
@@ -47,6 +75,21 @@ export function App() {
       setLoading(false);
     }
   }
+
+  // Deep-link support: load ?u=<name> on first paint and on back/forward.
+  useEffect(() => {
+    const load = () => {
+      const u = new URLSearchParams(window.location.search).get("u");
+      if (u) {
+        setQuery(u);
+        run(u);
+      }
+    };
+    load();
+    window.addEventListener("popstate", load);
+    return () => window.removeEventListener("popstate", load);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="shell">
@@ -178,6 +221,7 @@ function Dashboard({
           {profile.bio && <div className="bio">{profile.bio}</div>}
         </div>
         <div className="spacer" />
+        <ShareButton login={profile.login} />
         <div className="modes">
           <button
             className={mode === "overall" ? "active" : ""}

@@ -1,4 +1,12 @@
-import { ActivityEvent } from "../../core/types.js";
+import { ActivityEvent, ContributionType } from "../../core/types.js";
+
+const TYPE_META: Record<ContributionType, { icon: string; label: string }> = {
+  commit: { icon: "⬆️", label: "Commit" },
+  pullRequest: { icon: "🔀", label: "PR" },
+  issue: { icon: "🐛", label: "Issue" },
+  review: { icon: "👀", label: "Review" },
+  other: { icon: "•", label: "Activity" },
+};
 
 export function Feed({ events }: { events: ActivityEvent[] }) {
   if (!events.length) {
@@ -6,27 +14,42 @@ export function Feed({ events }: { events: ActivityEvent[] }) {
   }
   return (
     <div className="feed">
-      {events.map((e) => (
-        <div className="feed-item" key={e.id + e.title}>
-          <span className={`dot t-${e.type}`} />
-          <div className="body">
-            <div className="title">
-              <a href={e.url} target="_blank" rel="noreferrer">
-                {e.title}
-              </a>
-            </div>
-            <div className="meta">
-              <span className="pill">{e.repo}</span>{" "}
-              {new Date(e.datetime).toLocaleString(undefined, {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+      {events.map((e) => {
+        const meta = TYPE_META[e.type];
+        return (
+          <div className="feed-item" key={e.id + e.title}>
+            <span className={`feed-icon t-${e.type}`} title={meta.label}>
+              {meta.icon}
+            </span>
+            <div className="body">
+              <div className="title">
+                <a href={e.url} target="_blank" rel="noreferrer">
+                  {e.title}
+                </a>
+              </div>
+              <div className="meta">
+                <span className={`type-tag t-${e.type}`}>{meta.label}</span>
+                <a
+                  className="pill"
+                  href={e.repoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {e.repo}
+                </a>
+                <span className="when">
+                  {new Date(e.datetime).toLocaleString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
