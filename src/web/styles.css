@@ -1225,6 +1225,36 @@ footer a { color: var(--violet); }
   margin: 0 0 18px;
 }
 
+/* Fun facts */
+.fun-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.fact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  animation: fade-up 0.5s ease both;
+}
+.fact-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex: none;
+}
+.fact-text { color: var(--text); }
+.fun-facts .fact:nth-child(2) { animation-delay: 0.05s; }
+.fun-facts .fact:nth-child(3) { animation-delay: 0.1s; }
+.fun-facts .fact:nth-child(4) { animation-delay: 0.15s; }
+.fun-facts .fact:nth-child(5) { animation-delay: 0.2s; }
+.fun-facts .fact:nth-child(6) { animation-delay: 0.25s; }
+
 /* Tug-of-war metrics */
 .vs-metrics {
   display: flex;

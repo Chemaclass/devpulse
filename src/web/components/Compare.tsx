@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { derivePersona, Report } from "../../core/index.js";
+import { derivePersona, Persona, Report } from "../../core/index.js";
 import { CountUp } from "./CountUp.js";
 import { Skyline3D } from "./Skyline3D.js";
 
@@ -19,6 +19,110 @@ const B_RAMP = ["#2a1c12", "#6e3f24", "#a85f33", "#e08a4f", "#f3b98a"];
 
 function busiestDay(r: Report): number {
   return r.calendar.days.reduce((m, d) => (d.count > m ? d.count : m), 0);
+}
+
+function trait(p: Persona, label: string): string | undefined {
+  return p.traits.find((t) => t.label === label)?.value;
+}
+
+interface Fact {
+  icon: string;
+  text: string;
+}
+
+/** Punchy comparative facts, computed and filtered to the interesting ones. */
+function funFacts(a: Report, b: Report, pa: Persona, pb: Persona): Fact[] {
+  const out: Fact[] = [];
+  const al = a.profile.login;
+  const bl = b.profile.login;
+  const at = a.calendar.total;
+  const bt = b.calendar.total;
+
+  // Combined total.
+  out.push({
+    icon: "🤝",
+    text: `Together they've logged ${(at + bt).toLocaleString()} contributions.`,
+  });
+
+  // Contribution ratio.
+  const hi = at >= bt ? a : b;
+  const lo = at >= bt ? b : a;
+  const hiT = Math.max(at, bt);
+  const loT = Math.min(at, bt);
+  if (loT > 0 && hiT / loT >= 1.5) {
+    out.push({
+      icon: "🔥",
+      text: `@${hi.profile.login} has ${(hiT / loT).toFixed(1)}× the all-time contributions of @${lo.profile.login}.`,
+    });
+  }
+
+  // Longest streak.
+  if (a.calendar.longestStreak !== b.calendar.longestStreak) {
+    const s = a.calendar.longestStreak > b.calendar.longestStreak ? a : b;
+    out.push({
+      icon: "💎",
+      text: `@${s.profile.login} owns the longer streak: ${Math.max(a.calendar.longestStreak, b.calendar.longestStreak)} vs ${Math.min(a.calendar.longestStreak, b.calendar.longestStreak)} days.`,
+    });
+  }
+
+  // Best single day.
+  const ba = a.calendar.bestDay?.count ?? 0;
+  const bb = b.calendar.bestDay?.count ?? 0;
+  if (ba !== bb) {
+    const w = ba > bb ? al : bl;
+    out.push({
+      icon: "🏆",
+      text: `@${w}'s busiest day hit ${Math.max(ba, bb)} contributions.`,
+    });
+  }
+
+  // Favorite weekday.
+  const fa = trait(pa, "Favorite day");
+  const fb = trait(pb, "Favorite day");
+  if (fa && fb) {
+    out.push(
+      fa === fb
+        ? { icon: "📆", text: `Both ship most on ${fa}s.` }
+        : { icon: "📆", text: `@${al} loves ${fa}s, @${bl} prefers ${fb}s.` },
+    );
+  }
+
+  // Top language.
+  const la = a.languages[0]?.language;
+  const lb = b.languages[0]?.language;
+  if (la && lb) {
+    out.push(
+      la === lb
+        ? { icon: "💻", text: `${la} runs in both their veins.` }
+        : { icon: "💻", text: `@${al} is mostly ${la}, @${bl} mostly ${lb}.` },
+    );
+  }
+
+  // GitHub tenure.
+  const ya = new Date(a.profile.createdAt).getUTCFullYear();
+  const yb = new Date(b.profile.createdAt).getUTCFullYear();
+  if (ya && yb && ya !== yb) {
+    const older = ya < yb ? al : bl;
+    out.push({
+      icon: "🎂",
+      text: `@${older} has been on GitHub since ${Math.min(ya, yb)}, ${Math.abs(ya - yb)} year${Math.abs(ya - yb) === 1 ? "" : "s"} longer.`,
+    });
+  }
+
+  // Followers gap.
+  const fwA = a.profile.followers;
+  const fwB = b.profile.followers;
+  const fHi = Math.max(fwA, fwB);
+  const fLo = Math.min(fwA, fwB);
+  if (fLo > 0 && fHi / fLo >= 2) {
+    const w = fwA > fwB ? al : bl;
+    out.push({
+      icon: "🌍",
+      text: `@${w} has ${(fHi / fLo).toFixed(1)}× the followers.`,
+    });
+  }
+
+  return out.slice(0, 6);
 }
 
 interface Metric {
@@ -50,6 +154,8 @@ export function Compare({ a, b, onExit, onView }: Props) {
     { r: a, p: personaA, accent: A_ACCENT, wins: aWins, side: "a" as const },
     { r: b, p: personaB, accent: B_ACCENT, wins: bWins, side: "b" as const },
   ];
+
+  const facts = funFacts(a, b, personaA, personaB);
 
   return (
     <div className="compare">
@@ -102,6 +208,16 @@ export function Compare({ a, b, onExit, onView }: Props) {
         {leader
           ? `${leader.profile.login} leads ${Math.max(aWins, bWins)} to ${Math.min(aWins, bWins)}`
           : `Dead even, ${aWins} to ${bWins}`}
+      </div>
+
+      {/* Fun facts */}
+      <div className="fun-facts">
+        {facts.map((f, i) => (
+          <div className="fact" key={i}>
+            <span className="fact-icon">{f.icon}</span>
+            <span className="fact-text">{f.text}</span>
+          </div>
+        ))}
       </div>
 
       {/* Tug-of-war metrics */}
