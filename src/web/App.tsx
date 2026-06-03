@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   ContributionType,
   derivePersona,
@@ -47,7 +47,25 @@ const SITE = "https://chemaclass.github.io/devpulse/";
 function ShareTools({ login, persona }: { login: string; persona: TPersona }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const reportUrl = `${window.location.origin}${window.location.pathname}?u=${login}`;
+
+  // Close the menu on an outside click or Escape.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
   const badge = `[![DevPulse](https://img.shields.io/badge/DevPulse-${encodeURIComponent(
     persona.title,
   )}-2f7d44?logo=github)](${SITE}?u=${login})`;
@@ -62,7 +80,7 @@ function ShareTools({ login, persona }: { login: string; persona: TPersona }) {
   }
 
   return (
-    <div className="share-menu-wrap">
+    <div className="share-menu-wrap" ref={wrapRef}>
       <button className="share-btn" onClick={() => setOpen((o) => !o)}>
         🔗 Share ▾
       </button>
