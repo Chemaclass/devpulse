@@ -489,12 +489,13 @@ function Dashboard({
               target="_blank"
               rel="noreferrer"
             >
-              🏅 GitHub achievements →
+              🏅 Achievements →
             </a>
           </div>
         </div>
-        <div className="spacer" />
-        <ShareTools login={profile.login} persona={persona} />
+      </div>
+
+      <div className="dash-toolbar">
         <div className="modes">
           <button
             className={mode === "overall" ? "active" : ""}
@@ -523,9 +524,9 @@ function Dashboard({
             />
           )}
         </div>
+        <CompareBar onCompare={onCompare} loading={vsLoading} error={vsError} />
+        <ShareTools login={profile.login} persona={persona} />
       </div>
-
-      <CompareBar onCompare={onCompare} loading={vsLoading} error={vsError} />
 
       {mode === "overall" ? (
         <OverallView report={report} onPickDay={(d) => {
