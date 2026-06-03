@@ -27,6 +27,7 @@ import { Heatmap } from "./components/Heatmap.js";
 import { Icon } from "./components/Icon.js";
 import { Persona } from "./components/Persona.js";
 import { StatTile } from "./components/StatTile.js";
+import { trackProfileView } from "./lib/cronitor.js";
 import { setQueryParam, syncUrl } from "./lib/url.js";
 import { useToken } from "./token.js";
 
@@ -167,6 +168,7 @@ export function App() {
     try {
       const r = await getReport(username, fetch, token);
       setReport(r);
+      trackProfileView(r.profile.login);
     } catch (err) {
       if (err instanceof GitHubError && err.kind === "rate_limited") {
         setError(
@@ -189,6 +191,7 @@ export function App() {
       const r = await getReport(username, fetch, token);
       setVsReport(r);
       setQueryParam("vs", r.profile.login);
+      trackProfileView(r.profile.login, "compare");
     } catch (err) {
       setVsError(
         err instanceof GitHubError && err.kind === "rate_limited"
