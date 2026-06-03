@@ -223,12 +223,23 @@ a:hover {
   top: 48px;
   right: 0;
   width: 280px;
+  max-width: calc(100vw - 24px);
   padding: 14px;
-  background: var(--panel);
+  background: var(--tooltip-bg);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   text-align: left;
+}
+@media (max-width: 480px) {
+  .token-panel {
+    position: fixed;
+    top: 66px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+  }
 }
 .token-panel .tp-title {
   margin: 0 0 6px;
