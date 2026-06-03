@@ -20,14 +20,10 @@ interface Props {
 }
 
 // Forest-green ramp, matching the 2D heatmap levels.
-const LEVEL_COLORS = ["#1b2616", "#2f5138", "#46824f", "#6fae5f", "#a7d98a"];
+const LEVEL_COLORS = ["#243a1f", "#2f5138", "#46824f", "#6fae5f", "#a7d98a"];
+const TRUNK_COLOR = "#5b4329";
 
-// Tallest building in world units when count === scaleMax.
-const MAX_HEIGHT = 7;
-// Footprint of each building (grid cells are 1 unit apart, so < 1 = streets).
-const FOOTPRINT = 0.74;
-
-interface Bar {
+interface Tree {
   date: string;
   count: number;
   level: number;
@@ -35,7 +31,7 @@ interface Bar {
   row: number;
 }
 
-function buildBars(days: CalendarDay[], window: number): Bar[] {
+function buildTrees(days: CalendarDay[], window: number): Tree[] {
   const today = new Date().toISOString().slice(0, 10);
   const recent = days.filter((d) => d.date <= today).slice(-window);
   if (!recent.length) return [];
@@ -52,68 +48,101 @@ function buildBars(days: CalendarDay[], window: number): Bar[] {
   });
 }
 
-function Bars({
-  bars,
+function Forest({
+  trees,
   numWeeks,
   scaleMax,
   colors,
   onHover,
   onSelect,
 }: {
-  bars: Bar[];
+  trees: Tree[];
   numWeeks: number;
   scaleMax: number;
   colors: string[];
-  onHover: (b: Bar | null) => void;
+  onHover: (t: Tree | null) => void;
   onSelect?: (date: string) => void;
 }) {
-  // Unit cube scaled per building, so geometry + materials are shared.
-  const geometry = useMemo(
-    () => new THREE.BoxGeometry(FOOTPRINT, 1, FOOTPRINT),
+  // Unit geometries scaled per tree, so everything is shared (5 foliage
+  // materials + 1 trunk material, two geometries total).
+  const coneGeo = useMemo(() => new THREE.ConeGeometry(1, 1, 7), []);
+  const trunkGeo = useMemo(
+    () => new THREE.CylinderGeometry(0.08, 0.11, 1, 6),
     [],
   );
-  const materials = useMemo(
+  const foliageMats = useMemo(
     () =>
       colors.map(
         (c, i) =>
           new THREE.MeshStandardMaterial({
             color: c,
-            roughness: 0.55,
-            metalness: 0.05,
+            roughness: 0.78,
+            metalness: 0,
             emissive: new THREE.Color(c),
-            emissiveIntensity: i >= 3 ? 0.35 : 0.08,
+            emissiveIntensity: i >= 3 ? 0.22 : 0.04,
+            flatShading: true,
           }),
       ),
     [colors],
+  );
+  const trunkMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: TRUNK_COLOR, roughness: 0.9 }),
+    [],
   );
 
   const offsetX = numWeeks / 2;
   return (
     <group>
-      {bars.map((b) => {
-        // Absolute scale: count maps to height against a shared reference
-        // (scaleMax), so the same count is the same height for any user.
-        const ratio = Math.min(1, b.count / scaleMax);
-        const h = b.count === 0 ? 0.06 : 0.25 + ratio * MAX_HEIGHT;
-        const x = b.col - offsetX;
-        const z = b.row - 3;
+      {trees.map((t) => {
+        // Absolute scale against a shared reference, so the same count is the
+        // same tree height for any user (fair side-by-side comparison).
+        const ratio = Math.min(1, t.count / scaleMax);
+        const x = t.col - offsetX;
+        const z = t.row - 3;
+        const handlers = {
+          onPointerOver: (e: { stopPropagation: () => void }) => {
+            e.stopPropagation();
+            onHover(t);
+          },
+          onPointerOut: () => onHover(null),
+          onClick: (e: { stopPropagation: () => void }) => {
+            e.stopPropagation();
+            onSelect?.(t.date);
+          },
+        };
+
+        // Empty day: a small bare mound instead of a tree.
+        if (t.count === 0) {
+          return (
+            <mesh
+              key={t.date}
+              geometry={coneGeo}
+              material={foliageMats[0]}
+              position={[x, 0.07, z]}
+              scale={[0.24, 0.16, 0.24]}
+              {...handlers}
+            />
+          );
+        }
+
+        const trunkH = 0.3 + ratio * 0.5;
+        const foliageH = 0.7 + ratio * 5;
+        const r = 0.34 + ratio * 0.22;
         return (
-          <mesh
-            key={b.date}
-            geometry={geometry}
-            material={materials[b.level]}
-            position={[x, h / 2, z]}
-            scale={[1, h, 1]}
-            onPointerOver={(e) => {
-              e.stopPropagation();
-              onHover(b);
-            }}
-            onPointerOut={() => onHover(null)}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect?.(b.date);
-            }}
-          />
+          <group key={t.date} position={[x, 0, z]} {...handlers}>
+            <mesh
+              geometry={trunkGeo}
+              material={trunkMat}
+              position={[0, trunkH / 2, 0]}
+              scale={[1, trunkH, 1]}
+            />
+            <mesh
+              geometry={coneGeo}
+              material={foliageMats[t.level]}
+              position={[0, trunkH + foliageH / 2, 0]}
+              scale={[r, foliageH, r]}
+            />
+          </group>
         );
       })}
     </group>
@@ -121,13 +150,13 @@ function Bars({
 }
 
 function Ground({ numWeeks, color }: { numWeeks: number; color: string }) {
-  // A thin slab under the city for a "map" feel.
+  // A thin slab of forest floor under the trees.
   const w = numWeeks + 1.5;
   const d = 8.5;
   return (
     <mesh position={[0, -0.06, 0]} receiveShadow>
       <boxGeometry args={[w, 0.12, d]} />
-      <meshStandardMaterial color={color} roughness={0.95} metalness={0} />
+      <meshStandardMaterial color={color} roughness={1} metalness={0} />
     </mesh>
   );
 }
@@ -142,16 +171,16 @@ export function Skyline3D({
   const { theme } = useTheme();
   const light = theme === "light";
   const bgColor = light ? "#eef1e6" : "#0f1310";
-  const groundColor = light ? "#dde3cf" : "#11160f";
-  const [hover, setHover] = useState<Bar | null>(null);
-  const bars = useMemo(() => buildBars(days, window), [days, window]);
-  const numWeeks = bars.length ? Math.max(...bars.map((b) => b.col)) + 1 : 0;
-  const ownMax = Math.max(1, ...bars.map((b) => b.count));
+  const groundColor = light ? "#cdd8b8" : "#13200f";
+  const [hover, setHover] = useState<Tree | null>(null);
+  const trees = useMemo(() => buildTrees(days, window), [days, window]);
+  const numWeeks = trees.length ? Math.max(...trees.map((t) => t.col)) + 1 : 0;
+  const ownMax = Math.max(1, ...trees.map((t) => t.count));
   // Use the caller's shared reference when given (for fair user-vs-user
   // comparison); otherwise scale to this user's own busiest day.
   const effectiveMax = scaleMax && scaleMax > 0 ? scaleMax : ownMax;
 
-  if (!bars.length) {
+  if (!trees.length) {
     return <p className="muted">No contributions to render.</p>;
   }
 
@@ -167,8 +196,8 @@ export function Skyline3D({
         <directionalLight position={[18, 30, 12]} intensity={light ? 1.3 : 1.1} />
         <directionalLight position={[-20, 14, -10]} intensity={0.35} />
         <Ground numWeeks={numWeeks} color={groundColor} />
-        <Bars
-          bars={bars}
+        <Forest
+          trees={trees}
           numWeeks={numWeeks}
           scaleMax={effectiveMax}
           colors={colors}

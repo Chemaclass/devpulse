@@ -4,7 +4,7 @@ const FEATURES = [
   {
     icon: "🌳",
     title: "A full year at a glance",
-    body: "Every public contribution as a 3D skyline, with streaks, peak days and month-by-month rhythm.",
+    body: "Every public contribution as a rotatable 3D forest, with streaks, peak days and month-by-month rhythm.",
   },
   {
     icon: "🧬",
