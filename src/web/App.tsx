@@ -614,10 +614,13 @@ function OverallView({
         <div className="card col-4">
           <h3>Coding clock · UTC</h3>
           <div style={{ height: 260 }}>
-            {report.events.length ? (
+            {report.events.length >= 12 ? (
               <CodingClock events={report.events} />
             ) : (
-              <p className="muted">No recent events to chart.</p>
+              <p className="muted">
+                Not enough recent public events to map coding hours (GitHub only
+                exposes timestamps for the latest events).
+              </p>
             )}
           </div>
         </div>
