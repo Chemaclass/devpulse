@@ -1,0 +1,20 @@
+# Cloudflare Worker that gives DevPulse dynamic Open Graph previews.
+#
+# Why a worker? GitHub Pages serves a single static index.html with fixed
+# og: meta tags, so a shared link like ?u=torvalds always unfurls the same
+# generic card. This worker sits in front of the site (on a custom domain),
+# injects per-user og:title / og:image into the HTML, and renders the image
+# at /og?u=<login>.
+#
+# Deploy:
+#   cd worker && npm install && npx wrangler deploy
+# Then point a custom domain (Workers route) at it, and set that domain as the
+# site's public URL. Pages stays the origin (SITE below).
+
+name = "devpulse-og"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+[vars]
+# The static GitHub Pages origin the worker proxies and screenshots.
+SITE = "https://chemaclass.github.io/devpulse"
