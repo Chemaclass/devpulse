@@ -15,6 +15,8 @@ interface Props {
    * comparable. Defaults to this user's own busiest day.
    */
   scaleMax?: number;
+  /** Optional 5-step color ramp (level 0..4). Defaults to forest green. */
+  colors?: string[];
 }
 
 // Forest-green ramp, matching the 2D heatmap levels.
@@ -54,12 +56,14 @@ function Bars({
   bars,
   numWeeks,
   scaleMax,
+  colors,
   onHover,
   onSelect,
 }: {
   bars: Bar[];
   numWeeks: number;
   scaleMax: number;
+  colors: string[];
   onHover: (b: Bar | null) => void;
   onSelect?: (date: string) => void;
 }) {
@@ -70,7 +74,7 @@ function Bars({
   );
   const materials = useMemo(
     () =>
-      LEVEL_COLORS.map(
+      colors.map(
         (c, i) =>
           new THREE.MeshStandardMaterial({
             color: c,
@@ -80,7 +84,7 @@ function Bars({
             emissiveIntensity: i >= 3 ? 0.35 : 0.08,
           }),
       ),
-    [],
+    [colors],
   );
 
   const offsetX = numWeeks / 2;
@@ -128,7 +132,13 @@ function Ground({ numWeeks, color }: { numWeeks: number; color: string }) {
   );
 }
 
-export function Skyline3D({ days, window = 371, onSelect, scaleMax }: Props) {
+export function Skyline3D({
+  days,
+  window = 371,
+  onSelect,
+  scaleMax,
+  colors = LEVEL_COLORS,
+}: Props) {
   const { theme } = useTheme();
   const light = theme === "light";
   const bgColor = light ? "#eef1e6" : "#0f1310";
@@ -161,6 +171,7 @@ export function Skyline3D({ days, window = 371, onSelect, scaleMax }: Props) {
           bars={bars}
           numWeeks={numWeeks}
           scaleMax={effectiveMax}
+          colors={colors}
           onHover={setHover}
           onSelect={onSelect}
         />
