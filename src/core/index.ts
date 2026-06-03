@@ -20,9 +20,22 @@ export {
 export { derivePersona } from "./persona.js";
 export type { Persona, PersonaTrait } from "./persona.js";
 
+// In-memory report cache. The public GitHub API allows only 60 requests/hour
+// per IP without a token, and each report is several requests, so re-querying
+// the same user (view switches, back/forward, compare, examples) would burn
+// through the budget fast. Cache successful reports for a while instead.
+const CACHE_TTL_MS = 30 * 60 * 1000;
+const reportCache = new Map<string, { report: Report; expires: number }>();
+
+/** Drop all cached reports (e.g. to force a fresh fetch). */
+export function clearReportCache(): void {
+  reportCache.clear();
+}
+
 /**
  * One-shot: fetch every public source for a username and assemble a Report.
  * Works in the browser and in Node (both have global fetch on supported runtimes).
+ * Successful results are cached in memory for ~30 minutes.
  */
 export async function getReport(
   username: string,
@@ -36,19 +49,17 @@ export async function getReport(
     );
   }
 
+  // Key by user + whether a token was used (authed reports carry more data).
+  // The token value itself is never part of the key.
+  const authToken = token?.trim() || undefined;
+  const cacheKey = `${clean.toLowerCase()}|${authToken ? "auth" : "anon"}`;
+  const now = Date.now();
+  const cached = reportCache.get(cacheKey);
+  if (cached && cached.expires > now) return cached.report;
+
   // A token raises the rate limit and unlocks GraphQL. It is attached ONLY to
-  // GitHub REST calls (api.github.com) — never to the calendar proxy below.
-  const ghFetch: typeof fetch =
-    token && token.trim()
-      ? (url, init) =>
-          fetchImpl(url, {
-            ...init,
-            headers: {
-              ...(init?.headers as Record<string, string> | undefined),
-              Authorization: `Bearer ${token.trim()}`,
-            },
-          })
-      : fetchImpl;
+  // GitHub REST calls (api.github.com) — never to the calendar proxy.
+  const ghFetch = authToken ? withAuth(fetchImpl, authToken) : fetchImpl;
 
   const [profile, calendar, eventsResult, languages] = await Promise.all([
     fetchProfile(clean, ghFetch),
@@ -58,16 +69,14 @@ export async function getReport(
   ]);
 
   // With a token, enrich with real per-repo commit history for the last year.
-  let yearRepos;
-  if (token && token.trim()) {
-    try {
-      yearRepos = await fetchYearRepoContributions(clean, token.trim(), fetchImpl);
-    } catch {
-      /* non-fatal: fall back to the public report */
-    }
-  }
+  // Non-fatal: any failure falls back to the public report.
+  const yearRepos = authToken
+    ? await fetchYearRepoContributions(clean, authToken, fetchImpl).catch(
+        () => undefined,
+      )
+    : undefined;
 
-  return buildReport({
+  const report = buildReport({
     profile,
     calendar,
     events: eventsResult.events,
@@ -75,6 +84,23 @@ export async function getReport(
     languages,
     yearRepos,
   });
+  reportCache.set(cacheKey, { report, expires: now + CACHE_TTL_MS });
+  return report;
+}
+
+/**
+ * Wrap a fetch so requests carry the bearer token. Only ever applied to
+ * GitHub REST calls, never to the third-party contribution-calendar proxy.
+ */
+function withAuth(fetchImpl: typeof fetch, token: string): typeof fetch {
+  return (url, init) =>
+    fetchImpl(url, {
+      ...init,
+      headers: {
+        ...(init?.headers as Record<string, string> | undefined),
+        Authorization: `Bearer ${token}`,
+      },
+    });
 }
 
 /**
