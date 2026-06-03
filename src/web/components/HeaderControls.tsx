@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "../theme.js";
 import { useToken } from "../token.js";
 
@@ -21,8 +21,27 @@ export function TokenControl() {
   const { token, setToken } = useToken();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(token);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  // Close the panel on an outside click or Escape.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
-    <div className="token-control">
+    <div className="token-control" ref={wrapRef}>
       <button
         className="token-btn"
         onClick={() => {
