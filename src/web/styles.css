@@ -976,6 +976,99 @@ footer a { color: var(--violet); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ---------- Gamification card ---------- */
+.game {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.game-level {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 260px;
+  flex: 1;
+}
+.gl-ring {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, var(--bg-2) 56%, transparent 57%),
+    conic-gradient(var(--cyan) var(--pct, 0%), var(--panel-soft) 0);
+  border: 1px solid var(--panel-border);
+}
+.gl-num {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--cyan);
+}
+.gl-lvl {
+  position: absolute;
+  bottom: 12px;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+.gl-info { flex: 1; min-width: 0; }
+.gl-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+}
+.gl-sub { font-size: 12px; margin-top: 2px; }
+.gl-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--panel-soft);
+  overflow: hidden;
+  margin: 8px 0 4px;
+}
+.gl-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--green), var(--cyan));
+  transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.gl-next { font-size: 11px; }
+.game-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1.2;
+  min-width: 260px;
+}
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-soft);
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.4;
+  filter: grayscale(1);
+  transition: transform 0.12s ease;
+}
+.badge.earned {
+  opacity: 1;
+  filter: none;
+  border-color: color-mix(in srgb, var(--cyan) 45%, transparent);
+  background: color-mix(in srgb, var(--cyan) 12%, transparent);
+}
+.badge.earned:hover { transform: translateY(-2px); }
+.badge-icon { font-size: 15px; }
+
 /* ---------- Compare ---------- */
 .compare-bar {
   display: flex;
