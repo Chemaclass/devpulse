@@ -1,7 +1,11 @@
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { derivePersona, Persona, Report } from "../../core/index.js";
+import { TypeRadarCompare, YearBarsCompare } from "./Charts.js";
 import { CountUp } from "./CountUp.js";
 import { Skyline3D } from "./Skyline3D.js";
+
+const A_FILL = "rgba(111,176,106,0.22)";
+const B_FILL = "rgba(224,138,79,0.22)";
 
 interface Props {
   a: Report;
@@ -157,13 +161,30 @@ export function Compare({ a, b, onExit, onView }: Props) {
 
   const facts = funFacts(a, b, personaA, personaB);
 
+  const verdict = leader
+    ? `${leader.profile.login} leads ${Math.max(aWins, bWins)} to ${Math.min(aWins, bWins)}`
+    : `Dead even, ${aWins} to ${bWins}`;
+
+  const [copied, setCopied] = useState(false);
+  function shareBattle() {
+    const text = `⚔️ @${a.profile.login} vs @${b.profile.login} on DevPulse — ${verdict}! ${window.location.href}`;
+    navigator.clipboard?.writeText(text).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
   return (
     <div className="compare">
       <div className="compare-head">
         <h2>Head to head</h2>
-        <button className="share-btn" onClick={onExit}>
-          ← Back
-        </button>
+        <div className="compare-head-actions">
+          <button className="share-btn" onClick={shareBattle}>
+            {copied ? "✓ Copied" : "⚔️ Share battle"}
+          </button>
+          <button className="share-btn" onClick={onExit}>
+            ← Back
+          </button>
+        </div>
       </div>
 
       {/* Scoreboard */}
@@ -212,11 +233,7 @@ export function Compare({ a, b, onExit, onView }: Props) {
         ))}
       </div>
 
-      <div className="vs-verdict">
-        {leader
-          ? `${leader.profile.login} leads ${Math.max(aWins, bWins)} to ${Math.min(aWins, bWins)}`
-          : `Dead even, ${aWins} to ${bWins}`}
-      </div>
+      <div className="vs-verdict">{verdict}</div>
 
       {/* Fun facts */}
       <div className="fun-facts">
@@ -261,6 +278,28 @@ export function Compare({ a, b, onExit, onView }: Props) {
         })}
       </div>
 
+      {/* Overlaid charts */}
+      <div className="compare-charts">
+        <div className="card">
+          <h3>Contribution personality</h3>
+          <div style={{ height: 280 }}>
+            <TypeRadarCompare
+              a={{ label: `@${a.profile.login}`, byType: a.byType, color: A_ACCENT, fill: A_FILL }}
+              b={{ label: `@${b.profile.login}`, byType: b.byType, color: B_ACCENT, fill: B_FILL }}
+            />
+          </div>
+        </div>
+        <div className="card">
+          <h3>Contributions by year</h3>
+          <div style={{ height: 280 }}>
+            <YearBarsCompare
+              a={{ label: `@${a.profile.login}`, totalByYear: a.calendar.totalByYear, color: A_ACCENT }}
+              b={{ label: `@${b.profile.login}`, totalByYear: b.calendar.totalByYear, color: B_ACCENT }}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Color-matched cities */}
       <div className="compare-skylines">
         {people.map(({ r, accent, side }) => (
@@ -281,7 +320,7 @@ export function Compare({ a, b, onExit, onView }: Props) {
         ))}
       </div>
       <p className="muted compare-note">
-        Buildings share one height scale, so the two cities are directly
+        Tree heights share one scale, so the two forests are directly
         comparable.
       </p>
     </div>

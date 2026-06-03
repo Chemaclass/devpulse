@@ -1316,6 +1316,16 @@ a.chip-link:hover {
 .vm-fill:first-child { border-radius: 999px 0 0 999px; }
 .vm-fill:last-child { border-radius: 0 999px 999px 0; }
 
+.compare-head-actions {
+  display: flex;
+  gap: 8px;
+}
+.compare-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
 .compare-skylines {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1324,6 +1334,7 @@ a.chip-link:hover {
 .compare-note { text-align: center; margin-top: 12px; font-size: 13px; }
 @media (max-width: 760px) {
   .scoreboard,
+  .compare-charts,
   .compare-skylines { grid-template-columns: 1fr; }
   .sb-vs { display: none; }
 }

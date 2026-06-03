@@ -295,3 +295,78 @@ export function CodingClock({ events }: { events: ActivityEvent[] }) {
     />
   );
 }
+
+interface RadarSeries {
+  label: string;
+  byType: Record<ContributionType, number>;
+  color: string;
+  fill: string;
+}
+
+export function TypeRadarCompare({ a, b }: { a: RadarSeries; b: RadarSeries }) {
+  const series = [a, b];
+  const data = {
+    labels: CONTRIBUTION_TYPES.map((t) => TYPE_LABELS[t]),
+    datasets: series.map((s) => ({
+      label: s.label,
+      data: CONTRIBUTION_TYPES.map((t) => s.byType[t]),
+      backgroundColor: s.fill,
+      borderColor: s.color,
+      borderWidth: 2,
+      pointBackgroundColor: s.color,
+    })),
+  };
+  return (
+    <Radar
+      data={data}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: tickColor, boxWidth: 12 } } },
+        scales: {
+          r: {
+            angleLines: { color: gridColor },
+            grid: { color: gridColor },
+            pointLabels: { color: tickColor, font: { size: 12 } },
+            ticks: { display: false, precision: 0 },
+          },
+        },
+      }}
+    />
+  );
+}
+
+interface YearSeries {
+  label: string;
+  totalByYear: Record<string, number>;
+  color: string;
+}
+
+export function YearBarsCompare({ a, b }: { a: YearSeries; b: YearSeries }) {
+  const years = Array.from(
+    new Set([...Object.keys(a.totalByYear), ...Object.keys(b.totalByYear)]),
+  ).sort();
+  const data = {
+    labels: years,
+    datasets: [a, b].map((s) => ({
+      label: s.label,
+      data: years.map((y) => s.totalByYear[y] ?? 0),
+      backgroundColor: s.color,
+      borderRadius: 3,
+    })),
+  };
+  return (
+    <Bar
+      data={data}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: tickColor, boxWidth: 12 } } },
+        scales: {
+          x: { ticks: { color: tickColor }, grid: { display: false } },
+          y: { ticks: { color: tickColor, precision: 0 }, grid: { color: gridColor } },
+        },
+      }}
+    />
+  );
+}
