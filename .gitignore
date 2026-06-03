@@ -9,5 +9,6 @@ out
 npm-debug.log*
 yarn-error.log*
 .vite
+.wrangler
 *.tsbuildinfo
 vite.config.ts.timestamp-*.mjs

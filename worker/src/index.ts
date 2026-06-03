@@ -8,8 +8,6 @@ type TEnv = {
 
 type TCardData = {
   login: string;
-  name: string;
-  emoji: string;
   title: string;
   total: number;
   currentStreak: number;
@@ -91,8 +89,6 @@ async function loadCard(login: string): Promise<TCardData | null> {
 
   return {
     login: profile.login,
-    name: profile.name ?? profile.login,
-    emoji: arch.emoji,
     title: arch.title,
     total,
     currentStreak,
@@ -103,29 +99,27 @@ async function loadCard(login: string): Promise<TCardData | null> {
 // ---- Image ----
 
 function ogImage(d: TCardData) {
-  const stat = (value: string, label: string, color: string) => `
-    <div style="display:flex;flex-direction:column;">
-      <span style="font-size:54px;font-weight:700;color:${color};">${value}</span>
-      <span style="font-size:20px;color:#9aa489;letter-spacing:2px;">${label}</span>
-    </div>`;
-  return `
-  <div style="display:flex;flex-direction:column;width:1200px;height:630px;padding:64px;
-    background:linear-gradient(135deg,#0f1310,#1a241a);color:#edefe3;font-family:sans-serif;">
-    <div style="font-size:34px;font-weight:700;">Dev⚡Pulse</div>
-    <div style="display:flex;align-items:center;margin-top:40px;">
-      <span style="font-size:120px;margin-right:32px;">${d.emoji}</span>
-      <div style="display:flex;flex-direction:column;">
-        <span style="font-size:24px;color:#9aa489;">@${d.login} is</span>
-        <span style="font-size:72px;font-weight:700;color:#74b06a;">${d.title}</span>
-      </div>
-    </div>
-    <div style="display:flex;gap:80px;margin-top:auto;">
-      ${stat(d.total.toLocaleString(), "CONTRIBUTIONS", "#74b06a")}
-      ${stat(d.currentStreak + "d", "CURRENT STREAK", "#e3b341")}
-      ${stat(String(d.bestDay), "BEST DAY", "#d8825c")}
-    </div>
-    <div style="font-size:20px;color:#9aa489;margin-top:32px;">chemaclass.github.io/devpulse</div>
-  </div>`;
+  // NOTE: Satori (workers-og) requires every element with more than one child
+  // to be display:flex, and it counts whitespace between tags as text-node
+  // children. So this template is kept on a single line with no gaps between
+  // sibling tags, and every <div> is explicitly flex.
+  const stat = (value: string, label: string, color: string) =>
+    `<div style="display:flex;flex-direction:column;"><span style="font-size:60px;font-weight:700;color:${color};">${value}</span><span style="font-size:22px;color:#9aa489;letter-spacing:2px;">${label}</span></div>`;
+  return (
+    `<div style="display:flex;flex-direction:column;width:1200px;height:630px;padding:72px;background:linear-gradient(135deg,#0f1310,#1a241a);color:#edefe3;font-family:sans-serif;">` +
+    `<div style="display:flex;align-items:center;font-size:40px;font-weight:800;letter-spacing:-1px;"><span>Dev</span><span style="color:#e3b341;">Pulse</span></div>` +
+    `<div style="display:flex;flex-direction:column;margin-top:64px;">` +
+    `<span style="font-size:30px;color:#9aa489;">@${d.login} is</span>` +
+    `<span style="font-size:96px;font-weight:800;line-height:1.05;color:#74b06a;">${d.title}</span>` +
+    `</div>` +
+    `<div style="display:flex;gap:96px;margin-top:auto;">` +
+    stat(d.total.toLocaleString(), "CONTRIBUTIONS", "#74b06a") +
+    stat(d.currentStreak + "d", "CURRENT STREAK", "#e3b341") +
+    stat(String(d.bestDay), "BEST DAY", "#d8825c") +
+    `</div>` +
+    `<div style="display:flex;font-size:24px;color:#9aa489;margin-top:36px;">chemaclass.github.io/devpulse</div>` +
+    `</div>`
+  );
 }
 
 // ---- Worker ----
@@ -147,9 +141,14 @@ export default {
     }
 
     // 2) Everything else: proxy the static site, injecting per-user meta when ?u= is set.
-    const upstream = await fetch(env.SITE + url.pathname + url.search, request);
+    const target = env.SITE + url.pathname + url.search;
     const login = url.searchParams.get("u");
-    if (!login || !upstream.headers.get("content-type")?.includes("text/html")) {
+    if (!login) return fetch(target, request);
+
+    // Ask the origin for an uncompressed body: HTMLRewriter can only parse and
+    // rewrite plain HTML, not a gzip/brotli-encoded response.
+    const upstream = await fetch(target, { headers: { "accept-encoding": "identity" } });
+    if (!upstream.headers.get("content-type")?.includes("text/html")) {
       return upstream;
     }
 
@@ -163,7 +162,11 @@ export default {
         e.setAttribute("content", value),
     });
     return new HTMLRewriter()
-      .on("title", { element: (e) => e.setInnerContent(title) })
+      .on("title", {
+        element: (e) => {
+          e.setInnerContent(title);
+        },
+      })
       .on('meta[name="description"]', setContent(description))
       .on('meta[property="og:title"]', setContent(title))
       .on('meta[property="og:description"]', setContent(description))
@@ -175,7 +178,9 @@ export default {
       .on('meta[property="og:image:alt"]', setContent(`${login} on DevPulse`))
       .on('meta[name="twitter:image"]', setContent(image))
       .on('link[rel="canonical"]', {
-        element: (e) => e.setAttribute("href", canonical),
+        element: (e) => {
+          e.setAttribute("href", canonical);
+        },
       })
       .transform(upstream);
   },
