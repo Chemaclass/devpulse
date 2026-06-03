@@ -10,7 +10,8 @@
     "report": "tsx src/cli/index.ts",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "og:image": "\"${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}\" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=public/og-default.png \"file://$PWD/scripts/og-default.html\""
   },
   "engines": {
     "node": ">=18"

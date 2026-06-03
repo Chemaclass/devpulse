@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1200px; height: 630px; overflow: hidden; }
+      .card {
+        width: 1200px;
+        height: 630px;
+        padding: 72px;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(135deg, #0f1310, #1a241a);
+        color: #edefe3;
+        font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      .brand { font-size: 40px; font-weight: 800; letter-spacing: -0.5px; }
+      .bolt { color: #e3b341; }
+      .title {
+        margin-top: 56px;
+        font-size: 92px;
+        font-weight: 800;
+        line-height: 1.02;
+        letter-spacing: -2px;
+        color: #74b06a;
+      }
+      .subtitle {
+        margin-top: 28px;
+        font-size: 30px;
+        line-height: 1.4;
+        color: #c7cdba;
+        max-width: 940px;
+      }
+      .row { margin-top: auto; display: flex; align-items: center; justify-content: space-between; }
+      .emojis { font-size: 52px; letter-spacing: 14px; }
+      .url { font-size: 26px; color: #9aa489; letter-spacing: 0.5px; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="brand">Dev<span class="bolt">⚡</span>Pulse</div>
+      <div class="title">GitHub work,<br />visualized</div>
+      <div class="subtitle">
+        Contribution heatmap, streaks, and a playful developer archetype for any
+        GitHub user. Public data, no login.
+      </div>
+      <div class="row">
+        <div class="emojis">🛡️🚀🗺️🔨🎛️</div>
+        <div class="url">chemaclass.github.io/devpulse</div>
+      </div>
+    </div>
+  </body>
+</html>

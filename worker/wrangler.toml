@@ -8,12 +8,21 @@
 #
 # Deploy:
 #   cd worker && npm install && npx wrangler deploy
-# Then point a custom domain (Workers route) at it, and set that domain as the
-# site's public URL. Pages stays the origin (SITE below).
+#
+# After deploy the worker is live at
+#   https://devpulse-og.<your-subdomain>.workers.dev/?u=<login>
+# SHARE THAT URL (not the github.io one) to get per-user link previews:
+# only the worker injects per-user og:title/og:description/og:image. Plain
+# github.io links always unfurl the generic default card.
+#
+# For a nicer URL, add a custom domain route below and share that instead, e.g.
+#   routes = [{ pattern = "devpulse.example.com", custom_domain = true }]
+# Pages stays the origin (SITE below).
 
 name = "devpulse-og"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
+workers_dev = true
 
 [vars]
 # The static GitHub Pages origin the worker proxies and screenshots.
