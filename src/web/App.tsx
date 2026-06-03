@@ -9,7 +9,14 @@ import {
 } from "../core/index.js";
 import { Landing, Skeleton } from "./components/AppStates.js";
 import { Bars, BarDatum } from "./components/Bars.js";
-import { DailyChart, TypeDoughnut } from "./components/Charts.js";
+import {
+  CodingClock,
+  DailyChart,
+  TypeDoughnut,
+  TypeRadar,
+  YearBars,
+} from "./components/Charts.js";
+import { downloadStatCard } from "./lib/shareCard.js";
 import { Feed } from "./components/Feed.js";
 import { GameCard } from "./components/GameCard.js";
 import {
@@ -372,6 +379,8 @@ function Dashboard({
     };
   }, [profile]);
 
+  const persona = useMemo(() => derivePersona(report), [report]);
+
   // Resolve the active day for "latest" / "date" modes.
   const latestActive = useMemo(() => {
     if (report.byDay.length) return report.byDay[0].date;
@@ -419,6 +428,13 @@ function Dashboard({
           </div>
         </div>
         <div className="spacer" />
+        <button
+          className="share-btn"
+          onClick={() => downloadStatCard(report, persona)}
+          title="Download a shareable stat card"
+        >
+          🖼️ Card
+        </button>
         <ShareButton login={profile.login} />
         <div className="modes">
           <button
@@ -597,6 +613,33 @@ function OverallView({
           ) : (
             <p className="muted">No public repositories with a primary language.</p>
           )}
+        </div>
+
+        <div className="card col-4">
+          <h3>Contribution personality</h3>
+          <div style={{ height: 260 }}>
+            <TypeRadar byType={byType} />
+          </div>
+        </div>
+        <div className="card col-4">
+          <h3>Coding clock · UTC</h3>
+          <div style={{ height: 260 }}>
+            {report.events.length ? (
+              <CodingClock events={report.events} />
+            ) : (
+              <p className="muted">No recent events to chart.</p>
+            )}
+          </div>
+        </div>
+        <div className="card col-4">
+          <h3>Contributions by year</h3>
+          <div style={{ height: 260 }}>
+            {Object.keys(calendar.totalByYear).length ? (
+              <YearBars totalByYear={calendar.totalByYear} />
+            ) : (
+              <p className="muted">No yearly data.</p>
+            )}
+          </div>
         </div>
 
         {report.yearRepos && report.yearRepos.length > 0 && (

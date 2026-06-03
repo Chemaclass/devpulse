@@ -8,10 +8,12 @@ import {
   LinearScale,
   LineElement,
   PointElement,
+  RadialLinearScale,
   Tooltip,
 } from "chart.js";
-import { Bar, Doughnut } from "react-chartjs-2";
+import { Bar, Doughnut, PolarArea, Radar } from "react-chartjs-2";
 import {
+  ActivityEvent,
   CalendarDay,
   CONTRIBUTION_TYPES,
   ContributionType,
@@ -25,6 +27,7 @@ ChartJS.register(
   LinearScale,
   LineElement,
   PointElement,
+  RadialLinearScale,
   Filler,
   Legend,
   Tooltip,
@@ -167,6 +170,126 @@ export function TypeDoughnut({
         cutout: "62%",
         plugins: {
           legend: { position: "bottom", labels: { color: tickColor, boxWidth: 12 } },
+        },
+      }}
+    />
+  );
+}
+
+export function YearBars({
+  totalByYear,
+}: {
+  totalByYear: Record<string, number>;
+}) {
+  const years = Object.keys(totalByYear).sort();
+  const data = {
+    labels: years,
+    datasets: [
+      {
+        label: "Contributions",
+        data: years.map((y) => totalByYear[y]),
+        backgroundColor: TYPE_COLORS.commit,
+        borderRadius: 4,
+      },
+    ],
+  };
+  return (
+    <Bar
+      data={data}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: tickColor }, grid: { display: false } },
+          y: { ticks: { color: tickColor, precision: 0 }, grid: { color: gridColor } },
+        },
+      }}
+    />
+  );
+}
+
+export function TypeRadar({
+  byType,
+}: {
+  byType: Record<ContributionType, number>;
+}) {
+  const data = {
+    labels: CONTRIBUTION_TYPES.map((t) => TYPE_LABELS[t]),
+    datasets: [
+      {
+        label: "Recent mix",
+        data: CONTRIBUTION_TYPES.map((t) => byType[t]),
+        backgroundColor: "rgba(116,176,106,0.25)",
+        borderColor: TYPE_COLORS.commit,
+        borderWidth: 2,
+        pointBackgroundColor: TYPE_COLORS.commit,
+      },
+    ],
+  };
+  return (
+    <Radar
+      data={data}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          r: {
+            angleLines: { color: gridColor },
+            grid: { color: gridColor },
+            pointLabels: { color: tickColor, font: { size: 12 } },
+            ticks: { display: false, precision: 0 },
+          },
+        },
+      }}
+    />
+  );
+}
+
+const HOUR_COLORS = (() => {
+  // Cool at night, warm by day — a sun cycle.
+  const arr: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    const day = h >= 6 && h < 18;
+    arr.push(day ? "rgba(227,179,65,0.65)" : "rgba(111,143,176,0.6)");
+  }
+  return arr;
+})();
+
+export function CodingClock({ events }: { events: ActivityEvent[] }) {
+  const buckets = new Array(24).fill(0);
+  for (const e of events) {
+    const h = new Date(e.datetime).getUTCHours();
+    if (!Number.isNaN(h)) buckets[h] += Math.max(1, e.weight);
+  }
+  const data = {
+    labels: buckets.map((_, h) => `${h}:00`),
+    datasets: [
+      {
+        data: buckets,
+        backgroundColor: HOUR_COLORS,
+        borderWidth: 0,
+      },
+    ],
+  };
+  return (
+    <PolarArea
+      data={data}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { title: (i) => `${i[0].label} UTC` } },
+        },
+        scales: {
+          r: {
+            grid: { color: gridColor },
+            angleLines: { color: gridColor },
+            ticks: { display: false },
+            pointLabels: { display: false },
+          },
         },
       }}
     />
