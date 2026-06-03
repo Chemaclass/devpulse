@@ -408,6 +408,14 @@ function Dashboard({
                 🌱 Since {profile.createdAt.slice(0, 4)}
               </span>
             )}
+            <a
+              className="chip chip-link"
+              href={`${profile.htmlUrl}?tab=achievements`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              🏅 GitHub achievements →
+            </a>
           </div>
         </div>
         <div className="spacer" />

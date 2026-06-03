@@ -195,6 +195,14 @@ export function Compare({ a, b, onExit, onView }: Props) {
                 @{r.profile.login}
               </a>
               <div className="sb-title">{p.title}</div>
+              <a
+                className="sb-ach"
+                href={`${r.profile.htmlUrl}?tab=achievements`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                🏅 GitHub achievements
+              </a>
               <div className="sb-wins" style={{ color: accent }}>
                 {wins} <span>win{wins === 1 ? "" : "s"}</span>
               </div>

@@ -885,6 +885,22 @@ footer a { color: var(--violet); }
   padding: 3px 10px;
   border-radius: 6px;
 }
+a.chip-link {
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+a.chip-link:hover {
+  color: var(--text);
+  border-color: var(--cyan);
+  text-decoration: none;
+}
+.sb-ach {
+  font-size: 12px;
+  color: var(--muted);
+}
+.sb-ach:hover {
+  color: var(--cyan);
+}
 
 /* ---------- Landing (empty state) ---------- */
 .landing {
