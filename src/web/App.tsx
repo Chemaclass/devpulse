@@ -496,36 +496,38 @@ function Dashboard({
       </div>
 
       <div className="dash-toolbar">
-        <div className="modes">
-          <button
-            className={mode === "overall" ? "active" : ""}
-            onClick={() => setMode("overall")}
-          >
-            Overall
-          </button>
-          <button
-            className={mode === "latest" ? "active" : ""}
-            onClick={() => setMode("latest")}
-          >
-            Latest day
-          </button>
-          <button
-            className={mode === "date" ? "active" : ""}
-            onClick={() => setMode("date")}
-          >
-            Pick a day
-          </button>
-          {mode === "date" && (
-            <input
-              type="date"
-              value={selectedDate ?? ""}
-              max={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setSelectedDate(e.target.value || null)}
-            />
-          )}
+        <div className="dash-toolbar-row">
+          <div className="modes">
+            <button
+              className={mode === "overall" ? "active" : ""}
+              onClick={() => setMode("overall")}
+            >
+              Overall
+            </button>
+            <button
+              className={mode === "latest" ? "active" : ""}
+              onClick={() => setMode("latest")}
+            >
+              Latest day
+            </button>
+            <button
+              className={mode === "date" ? "active" : ""}
+              onClick={() => setMode("date")}
+            >
+              Pick a day
+            </button>
+            {mode === "date" && (
+              <input
+                type="date"
+                value={selectedDate ?? ""}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setSelectedDate(e.target.value || null)}
+              />
+            )}
+          </div>
+          <ShareTools login={profile.login} persona={persona} />
         </div>
         <CompareBar onCompare={onCompare} loading={vsLoading} error={vsError} />
-        <ShareTools login={profile.login} persona={persona} />
       </div>
 
       {mode === "overall" ? (

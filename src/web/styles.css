@@ -1131,48 +1131,28 @@ a.chip-link:hover {
 .badge-icon { font-size: 15px; }
 
 /* ---------- Compare ---------- */
-/* Controls toolbar: modes (left) · compare (middle) · share (right) */
+/* Controls toolbar: a top row (modes + share) and the compare bar below. */
 .dash-toolbar {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 12px;
-  flex-wrap: wrap;
   margin: 0 0 18px;
 }
-.dash-toolbar .compare-bar {
-  flex: 1;
-  min-width: 220px;
+.dash-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.dash-toolbar .share-menu-wrap {
-  margin-left: auto;
-}
-@media (max-width: 720px) {
-  .dash-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .dash-toolbar .modes {
-    flex-wrap: wrap;
-  }
-  .dash-toolbar .compare-bar {
-    min-width: 0;
-  }
-  .dash-toolbar .compare-bar input {
-    min-width: 0;
-  }
-  .dash-toolbar .share-menu-wrap {
-    margin-left: 0;
-  }
-  .dash-toolbar .share-menu-wrap .share-btn {
-    width: 100%;
-  }
+.dash-toolbar .modes {
+  flex-wrap: wrap;
 }
 
 .compare-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
 }
 .compare-bar .cb-label {
   font-weight: 600;
@@ -1182,8 +1162,8 @@ a.chip-link:hover {
 }
 .compare-bar input {
   flex: 1;
-  min-width: 160px;
-  background: transparent;
+  min-width: 0;
+  background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 6px;
   padding: 8px 12px;
