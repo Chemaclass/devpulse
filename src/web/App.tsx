@@ -149,6 +149,12 @@ function TokenControl() {
             placeholder="ghp_…"
             spellCheck={false}
             autoCapitalize="none"
+            name="devpulse-token"
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+            data-form-type="other"
           />
           <div className="tp-actions">
             <a
@@ -277,6 +283,20 @@ export function App() {
     setQueryParam("vs", null);
   }
 
+  // Reset to the empty home state and clear the URL query.
+  function goHome() {
+    setQuery("");
+    setReport(null);
+    setError(null);
+    setLoading(false);
+    setMode("overall");
+    setSelectedDate(null);
+    setVsReport(null);
+    setVsError(null);
+    window.history.pushState({}, "", window.location.pathname);
+    document.title = "DevPulse ⚡ GitHub work, visualized";
+  }
+
   // Deep-link support: load ?u=<name> with an optional view (?mode=latest or
   // ?d=<date>) and optional ?vs=<name> on first paint and on back/forward.
   useEffect(() => {
@@ -328,7 +348,16 @@ export function App() {
         <ThemeToggle />
       </div>
       <header className="hero">
-        <h1 className="logo">
+        <h1
+          className="logo"
+          onClick={goHome}
+          role="button"
+          tabIndex={0}
+          title="Back to home"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") goHome();
+          }}
+        >
           Dev<span className="spark">⚡</span>Pulse
         </h1>
         <p className="tagline">
@@ -349,6 +378,13 @@ export function App() {
             autoFocus
             spellCheck={false}
             autoCapitalize="none"
+            type="search"
+            name="devpulse-search"
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+            data-form-type="other"
           />
           <button type="submit" disabled={loading}>
             {loading ? "Scanning…" : "Pulse it"}
