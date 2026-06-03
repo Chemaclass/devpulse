@@ -155,7 +155,7 @@ export async function fetchTopLanguages(
     .sort((a, b) => b.repos - a.repos || b.stars - a.stars);
 }
 
-interface RawEvent {
+export interface RawEvent {
   id: string;
   type: string;
   created_at: string;
@@ -163,7 +163,8 @@ interface RawEvent {
   payload: Record<string, any>;
 }
 
-function parseEvent(ev: RawEvent): ActivityEvent | null {
+/** Normalize one raw GitHub event into an ActivityEvent (or null to skip). */
+export function parseEvent(ev: RawEvent): ActivityEvent | null {
   const date = ev.created_at.slice(0, 10);
   const repo = ev.repo?.name ?? "unknown/unknown";
   const repoUrl = `https://github.com/${repo}`;
@@ -177,22 +178,20 @@ function parseEvent(ev: RawEvent): ActivityEvent | null {
 
   switch (ev.type) {
     case "PushEvent": {
-      const commits = Array.isArray(ev.payload.commits)
-        ? ev.payload.commits.length
-        : 0;
-      const weight = ev.payload.distinct_size ?? ev.payload.size ?? commits;
-      if (!weight) return null;
+      // The events API often omits size/distinct_size/commits on PushEvents
+      // now, leaving only ref/head/before. A push always means at least one
+      // commit, so fall back to 1 rather than dropping the event entirely.
+      const counted =
+        ev.payload.distinct_size ??
+        ev.payload.size ??
+        (Array.isArray(ev.payload.commits) ? ev.payload.commits.length : 0);
+      const weight = counted > 0 ? counted : 1;
       const branch = String(ev.payload.ref ?? "").replace("refs/heads/", "");
-      return {
-        ...base,
-        type: "commit",
-        weight,
-        action: "pushed",
-        title: `Pushed ${weight} commit${weight === 1 ? "" : "s"}${
-          branch ? ` to ${branch}` : ""
-        }`,
-        url: repoUrl,
-      };
+      const title =
+        counted > 0
+          ? `Pushed ${counted} commit${counted === 1 ? "" : "s"}${branch ? ` to ${branch}` : ""}`
+          : `Pushed to ${branch || "a branch"}`;
+      return { ...base, type: "commit", weight, action: "pushed", title, url: repoUrl };
     }
     case "PullRequestEvent": {
       const action = String(ev.payload.action ?? "");
