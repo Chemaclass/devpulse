@@ -43,16 +43,24 @@ function yearsSince(iso: string): number {
   return (Date.now() - then) / (365.25 * 24 * 3600 * 1000);
 }
 
+/** Total contributions in the last `lookback` days, from the calendar. */
+function recentContributions(report: Report, lookback = 90): number {
+  const today = new Date().toISOString().slice(0, 10);
+  const cutoff = new Date(Date.now() - lookback * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  return report.calendar.days.reduce(
+    (sum, d) => (d.date >= cutoff && d.date <= today ? sum + d.count : sum),
+    0,
+  );
+}
+
 export function deriveGamification(report: Report): Gamification {
   const { byType, events, languages, calendar, byRepo, profile } = report;
 
-  // Weighted score: shipping and reviewing are worth more than raw commits.
-  const score =
-    byType.commit * 1 +
-    byType.pullRequest * 4 +
-    byType.issue * 2 +
-    byType.review * 3 +
-    byType.other * 1;
+  // Score from the contribution calendar (accurate for everyone), not the
+  // public events feed, which is often sparse or only a single recent day.
+  const score = recentContributions(report);
 
   // Cubic curve so early levels come quickly and later ones take real work.
   const level = Math.max(0, Math.floor(Math.cbrt(score)));
