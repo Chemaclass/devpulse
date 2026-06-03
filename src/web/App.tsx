@@ -10,10 +10,10 @@ import {
 import { Landing, Skeleton } from "./components/AppStates.js";
 import { Bars, BarDatum } from "./components/Bars.js";
 import {
-  CodingClock,
   DailyChart,
   TypeDoughnut,
   TypeRadar,
+  WeekdayBars,
   YearBars,
 } from "./components/Charts.js";
 import { Feed } from "./components/Feed.js";
@@ -612,16 +612,9 @@ function OverallView({
           </div>
         </div>
         <div className="card col-4">
-          <h3>Coding clock · UTC</h3>
+          <h3>Weekly rhythm</h3>
           <div style={{ height: 260 }}>
-            {report.events.length >= 12 ? (
-              <CodingClock events={report.events} />
-            ) : (
-              <p className="muted">
-                Not enough recent public events to map coding hours (GitHub only
-                exposes timestamps for the latest events).
-              </p>
-            )}
+            <WeekdayBars days={calendar.days} />
           </div>
         </div>
         <div className="card col-4">

@@ -11,9 +11,8 @@ import {
   RadialLinearScale,
   Tooltip,
 } from "chart.js";
-import { Bar, Doughnut, PolarArea, Radar } from "react-chartjs-2";
+import { Bar, Doughnut, Radar } from "react-chartjs-2";
 import {
-  ActivityEvent,
   CalendarDay,
   CONTRIBUTION_TYPES,
   ContributionType,
@@ -247,49 +246,45 @@ export function TypeRadar({
   );
 }
 
-const HOUR_COLORS = (() => {
-  // Cool at night, warm by day — a sun cycle.
-  const arr: string[] = [];
-  for (let h = 0; h < 24; h++) {
-    const day = h >= 6 && h < 18;
-    arr.push(day ? "rgba(227,179,65,0.65)" : "rgba(111,143,176,0.6)");
-  }
-  return arr;
-})();
+const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// Monday-first display order.
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
-export function CodingClock({ events }: { events: ActivityEvent[] }) {
-  const buckets = new Array(24).fill(0);
-  for (const e of events) {
-    const h = new Date(e.datetime).getUTCHours();
-    if (!Number.isNaN(h)) buckets[h] += Math.max(1, e.weight);
+/**
+ * Contributions by weekday across the whole calendar (count-weighted).
+ * Uses the calendar (accurate for everyone) rather than the sparse events
+ * feed, with weekends tinted amber.
+ */
+export function WeekdayBars({ days }: { days: CalendarDay[] }) {
+  const buckets = new Array(7).fill(0);
+  for (const d of days) {
+    if (d.count <= 0) continue;
+    const w = new Date(d.date + "T00:00:00Z").getUTCDay();
+    if (!Number.isNaN(w)) buckets[w] += d.count;
   }
   const data = {
-    labels: buckets.map((_, h) => `${h}:00`),
+    labels: WEEK_ORDER.map((i) => WEEKDAY_SHORT[i]),
     datasets: [
       {
-        data: buckets,
-        backgroundColor: HOUR_COLORS,
-        borderWidth: 0,
+        label: "Contributions",
+        data: WEEK_ORDER.map((i) => buckets[i]),
+        backgroundColor: WEEK_ORDER.map((i) =>
+          i === 0 || i === 6 ? "#e3b341" : TYPE_COLORS.commit,
+        ),
+        borderRadius: 4,
       },
     ],
   };
   return (
-    <PolarArea
+    <Bar
       data={data}
       options={{
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { title: (i) => `${i[0].label} UTC` } },
-        },
+        plugins: { legend: { display: false } },
         scales: {
-          r: {
-            grid: { color: gridColor },
-            angleLines: { color: gridColor },
-            ticks: { display: false },
-            pointLabels: { display: false },
-          },
+          x: { ticks: { color: tickColor }, grid: { display: false } },
+          y: { ticks: { color: tickColor, precision: 0 }, grid: { color: gridColor } },
         },
       }}
     />
