@@ -115,7 +115,13 @@ export function DailyChart({
         maintainAspectRatio: false,
         plugins: {
           legend: { labels: { color: tickColor, boxWidth: 12 } },
-          tooltip: { mode: "index", intersect: false },
+          tooltip: {
+            mode: "index",
+            intersect: false,
+            // Only show series that actually contributed that day.
+            filter: (item) => (item.parsed.y ?? 0) > 0,
+            itemSort: (x, y) => (y.parsed.y ?? 0) - (x.parsed.y ?? 0),
+          },
         },
         scales: {
           x: {
