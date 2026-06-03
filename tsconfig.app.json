@@ -17,5 +17,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/core", "src/web"]
+  "include": ["src/core", "src/web"],
+  "exclude": ["src/**/*.test.ts"]
 }

@@ -13,5 +13,6 @@
     "strict": true,
     "types": ["node"]
   },
-  "include": ["src/core", "src/cli", "vite.config.ts"]
+  "include": ["src/core", "src/cli", "vite.config.ts"],
+  "exclude": ["src/**/*.test.ts"]
 }
