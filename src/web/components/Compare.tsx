@@ -7,6 +7,8 @@ interface Props {
   a: Report;
   b: Report;
   onExit: () => void;
+  /** Open one contender as their own dedicated DevPulse report. */
+  onView: (login: string) => void;
 }
 
 // Contender colors carried everywhere: stats, bars and the 3D cities.
@@ -25,7 +27,7 @@ interface Metric {
   b: number;
 }
 
-export function Compare({ a, b, onExit }: Props) {
+export function Compare({ a, b, onExit, onView }: Props) {
   const personaA = derivePersona(a);
   const personaB = derivePersona(b);
   const scaleMax = Math.max(1, busiestDay(a), busiestDay(b));
@@ -71,6 +73,9 @@ export function Compare({ a, b, onExit }: Props) {
                 src={r.profile.avatarUrl}
                 alt={r.profile.login}
                 style={{ borderColor: accent }}
+                className="sb-avatar"
+                title={`View @${r.profile.login} on DevPulse`}
+                onClick={() => onView(r.profile.login)}
               />
               <div className="sb-emoji">{p.emoji}</div>
               <div className="sb-name">{r.profile.name ?? r.profile.login}</div>

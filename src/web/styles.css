@@ -1172,6 +1172,11 @@ footer a { color: var(--violet); }
   height: 66px;
   border-radius: 50%;
   border: 2px solid var(--panel-border);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.sb-card img:hover {
+  transform: scale(1.06);
 }
 .sb-emoji { font-size: 26px; line-height: 1; }
 .sb-name {

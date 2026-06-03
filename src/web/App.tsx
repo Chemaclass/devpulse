@@ -245,7 +245,15 @@ export function App() {
 
       {report && !loading && vsReport && (
         <Suspense fallback={<Skeleton />}>
-          <Compare a={report} b={vsReport} onExit={exitCompare} />
+          <Compare
+            a={report}
+            b={vsReport}
+            onExit={exitCompare}
+            onView={(login) => {
+              setQuery(login);
+              run(login);
+            }}
+          />
         </Suspense>
       )}
 
