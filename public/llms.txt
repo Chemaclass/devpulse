@@ -1,0 +1,25 @@
+# DevPulse
+
+> Type any GitHub username and see how they work: contribution heatmap, streaks,
+> a playful developer archetype, top projects, primary languages, and recent
+> public activity. Public data only, no login.
+
+DevPulse is a free, open-source, client-side web app. Given a GitHub username it
+fetches public data (profile, contribution calendar, public events, repository
+languages) and renders an interactive report: an all-time contribution heatmap,
+current and longest streaks, a derived "developer archetype" (e.g. The Shipper,
+The Guardian), top projects, top languages, and a day-by-day activity feed. Two
+users can be compared side by side. An optional GitHub token unlocks accurate
+last-year stats via the GraphQL API; the token stays in the browser session and
+is sent only to api.github.com.
+
+## Pages
+- Home / app: https://chemaclass.github.io/devpulse/
+- Per-user report: https://chemaclass.github.io/devpulse/?u=USERNAME
+
+## Source
+- Repository: https://github.com/Chemaclass/devpulse
+- License: see repository
+
+## Author
+- Chema (Chemaclass): https://github.com/Chemaclass

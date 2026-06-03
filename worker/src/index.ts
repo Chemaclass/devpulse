@@ -153,12 +153,26 @@ export default {
       return upstream;
     }
 
+    const handle = encodeURIComponent(login);
     const title = `${login} · DevPulse`;
-    const image = `${url.origin}/og?u=${encodeURIComponent(login)}`;
+    const description = `See how @${login} works on GitHub: contribution heatmap, streaks, developer archetype, top projects and recent activity. Public data, no login.`;
+    const canonical = `${url.origin}${url.pathname}?u=${handle}`;
+    const image = `${url.origin}/og?u=${handle}`;
+    const setContent = (value: string) => ({
+      element: (e: { setAttribute: (k: string, v: string) => void }) =>
+        e.setAttribute("content", value),
+    });
     return new HTMLRewriter()
-      .on('meta[property="og:title"]', { element: (e) => e.setAttribute("content", title) })
-      .on('meta[name="twitter:card"]', {
-        element: (e) => e.setAttribute("content", "summary_large_image"),
+      .on("title", { element: (e) => e.setInnerContent(title) })
+      .on('meta[name="description"]', setContent(description))
+      .on('meta[property="og:title"]', setContent(title))
+      .on('meta[property="og:description"]', setContent(description))
+      .on('meta[property="og:url"]', setContent(canonical))
+      .on('meta[name="twitter:title"]', setContent(title))
+      .on('meta[name="twitter:description"]', setContent(description))
+      .on('meta[name="twitter:card"]', setContent("summary_large_image"))
+      .on('link[rel="canonical"]', {
+        element: (e) => e.setAttribute("href", canonical),
       })
       .on("head", {
         element: (e) =>

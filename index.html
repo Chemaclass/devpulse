@@ -15,14 +15,71 @@
       name="description"
       content="DevPulse — type any GitHub username and see how they work: contribution heatmap, streaks, developer archetype, projects and recent activity. Public data, no login."
     />
+    <meta
+      name="keywords"
+      content="GitHub stats, contribution heatmap, developer archetype, GitHub streak, coding activity, GitHub profile visualizer, open source"
+    />
+    <meta name="author" content="Chema (Chemaclass)" />
+    <meta name="application-name" content="DevPulse" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <link rel="canonical" href="https://chemaclass.github.io/devpulse/" />
+
+    <!-- Open Graph -->
     <meta property="og:title" content="DevPulse — GitHub work, visualized" />
     <meta
       property="og:description"
       content="Contribution heatmap, streaks, and a playful developer archetype for any GitHub user. Public data, no login."
     />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DevPulse" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:url" content="https://chemaclass.github.io/devpulse/" />
+
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="DevPulse — GitHub work, visualized" />
+    <meta
+      name="twitter:description"
+      content="Contribution heatmap, streaks, and a playful developer archetype for any GitHub user. Public data, no login."
+    />
+
     <title>DevPulse ⚡ GitHub work, visualized</title>
+
+    <!-- Structured data: helps search engines and AI understand the app -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "name": "DevPulse",
+            "url": "https://chemaclass.github.io/devpulse/",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "Any (web browser)",
+            "browserRequirements": "Requires JavaScript.",
+            "description": "Type any GitHub username and see how they work: contribution heatmap, streaks, a developer archetype, top projects, languages and recent public activity. Public data, no login.",
+            "isAccessibleForFree": true,
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "author": {
+              "@type": "Person",
+              "name": "Chema",
+              "alternateName": "Chemaclass",
+              "url": "https://github.com/Chemaclass"
+            },
+            "sameAs": ["https://github.com/Chemaclass/devpulse"]
+          },
+          {
+            "@type": "WebSite",
+            "name": "DevPulse",
+            "url": "https://chemaclass.github.io/devpulse/",
+            "description": "Visualize any GitHub user's public activity: heatmap, streaks, developer archetype, projects and languages."
+          }
+        ]
+      }
+    </script>
     <!-- Cronitor RUM -->
     <script async src="https://rum.cronitor.io/script.js"></script>
     <script>
@@ -35,7 +92,25 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <noscript>
+        <h1>DevPulse — GitHub work, visualized</h1>
+        <p>
+          DevPulse is a free, open-source web app that visualizes any GitHub
+          user's public activity. Type a username to see their contribution
+          heatmap, current and longest streaks, a playful developer archetype,
+          top projects, primary languages, and recent public activity — all from
+          public data, with no login required.
+        </p>
+        <p>
+          DevPulse needs JavaScript to render the interactive report. View the
+          source at
+          <a href="https://github.com/Chemaclass/devpulse"
+            >github.com/Chemaclass/devpulse</a
+          >.
+        </p>
+      </noscript>
+    </div>
     <script type="module" src="/src/web/main.tsx"></script>
   </body>
 </html>
