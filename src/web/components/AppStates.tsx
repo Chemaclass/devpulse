@@ -1,5 +1,7 @@
 // Empty (landing) and loading (skeleton) states for the app shell.
 
+import { Icon } from "./Icon.js";
+
 const FEATURES = [
   {
     icon: "🌳",
@@ -23,7 +25,9 @@ export function Landing() {
     <div className="landing">
       {FEATURES.map((f) => (
         <div className="landing-card" key={f.title}>
-          <span className="landing-icon">{f.icon}</span>
+          <span className="landing-icon">
+            <Icon glyph={f.icon} />
+          </span>
           <h3>{f.title}</h3>
           <p>{f.body}</p>
         </div>

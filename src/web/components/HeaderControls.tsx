@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "../theme.js";
 import { useToken } from "../token.js";
+import { Icon } from "./Icon.js";
 
 export function ThemeToggle() {
   const { theme, toggle } = useTheme();
@@ -12,7 +13,7 @@ export function ThemeToggle() {
       title={isDark ? "Switch to light" : "Switch to dark"}
       aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
     >
-      {isDark ? "☀️" : "🌙"}
+      <Icon glyph={isDark ? "☀️" : "🌙"} />
     </button>
   );
 }
@@ -51,7 +52,7 @@ export function TokenControl() {
         title={token ? "GitHub token set" : "Add a GitHub token (optional)"}
         aria-label="GitHub token settings"
       >
-        {token ? "🔓" : "🔑"}
+        <Icon glyph={token ? "🔓" : "🔑"} />
       </button>
       {open && (
         <div className="token-panel">
@@ -128,7 +129,15 @@ export function ShareButton({ login }: { login: string }) {
       onClick={copy}
       title="Copy a link to this report"
     >
-      {copied ? "✓ Copied" : "🔗 Share"}
+      {copied ? (
+        <>
+          <Icon glyph="✓" /> Copied
+        </>
+      ) : (
+        <>
+          <Icon glyph="🔗" /> Share
+        </>
+      )}
     </button>
   );
 }

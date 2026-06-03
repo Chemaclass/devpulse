@@ -1,4 +1,5 @@
 import { ActivityEvent, ContributionType } from "../../core/types.js";
+import { Icon } from "./Icon.js";
 
 const TYPE_META: Record<ContributionType, { icon: string; label: string }> = {
   commit: { icon: "⬆️", label: "Commit" },
@@ -19,7 +20,7 @@ export function Feed({ events }: { events: ActivityEvent[] }) {
         return (
           <div className="feed-item" key={e.id + e.title}>
             <span className={`feed-icon t-${e.type}`} title={meta.label}>
-              {meta.icon}
+              <Icon glyph={meta.icon} label={meta.label} />
             </span>
             <div className="body">
               <div className="title">

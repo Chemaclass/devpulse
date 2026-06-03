@@ -24,6 +24,7 @@ import {
   TokenControl,
 } from "./components/HeaderControls.js";
 import { Heatmap } from "./components/Heatmap.js";
+import { Icon } from "./components/Icon.js";
 import { Persona } from "./components/Persona.js";
 import { StatTile } from "./components/StatTile.js";
 import { setQueryParam, syncUrl } from "./lib/url.js";
@@ -82,12 +83,20 @@ function ShareTools({ login, persona }: { login: string; persona: TPersona }) {
   return (
     <div className="share-menu-wrap" ref={wrapRef}>
       <button className="share-btn" onClick={() => setOpen((o) => !o)}>
-        🔗 Share ▾
+        <Icon glyph="🔗" /> Share ▾
       </button>
       {open && (
         <div className="share-menu">
           <button onClick={() => copy("link", reportUrl)}>
-            {copied === "link" ? "✓ Copied" : "🔗 Copy link"}
+            {copied === "link" ? (
+              <>
+                <Icon glyph="✓" /> Copied
+              </>
+            ) : (
+              <>
+                <Icon glyph="🔗" /> Copy link
+              </>
+            )}
           </button>
           <button
             onClick={() =>
@@ -97,10 +106,26 @@ function ShareTools({ login, persona }: { login: string; persona: TPersona }) {
               )
             }
           >
-            {copied === "challenge" ? "✓ Copied" : "⚔️ Copy challenge invite"}
+            {copied === "challenge" ? (
+              <>
+                <Icon glyph="✓" /> Copied
+              </>
+            ) : (
+              <>
+                <Icon glyph="⚔️" /> Copy challenge invite
+              </>
+            )}
           </button>
           <button onClick={() => copy("readme", badge)}>
-            {copied === "readme" ? "✓ Copied" : "📋 Copy README badge"}
+            {copied === "readme" ? (
+              <>
+                <Icon glyph="✓" /> Copied
+              </>
+            ) : (
+              <>
+                <Icon glyph="📋" /> Copy README badge
+              </>
+            )}
           </button>
         </div>
       )}
@@ -266,7 +291,11 @@ export function App() {
             if (e.key === "Enter" || e.key === " ") goHome();
           }}
         >
-          Dev<span className="spark">⚡</span>Pulse
+          Dev
+          <span className="spark">
+            <Icon glyph="⚡" />
+          </span>
+          Pulse
         </h1>
         <p className="tagline">
           Type any GitHub username and see how much they worked. Commits, PRs,
@@ -377,7 +406,7 @@ export function App() {
             target="_blank"
             rel="noreferrer"
           >
-            ♥ Sponsor
+            <Icon glyph="♥" /> Sponsor
           </a>
         </p>
       </footer>
@@ -403,7 +432,9 @@ function CompareBar({
         if (value.trim()) onCompare(value.trim());
       }}
     >
-      <span className="cb-label">⚔️ Compare with</span>
+      <span className="cb-label">
+        <Icon glyph="⚔️" /> Compare with
+      </span>
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -483,14 +514,18 @@ function Dashboard({
           {profile.bio && <div className="bio">{profile.bio}</div>}
           <div className="profile-chips">
             {profile.company && (
-              <span className="chip">🏢 {profile.company}</span>
+              <span className="chip">
+                <Icon glyph="🏢" /> {profile.company}
+              </span>
             )}
             {profile.location && (
-              <span className="chip">📍 {profile.location}</span>
+              <span className="chip">
+                <Icon glyph="📍" /> {profile.location}
+              </span>
             )}
             {profile.createdAt && (
               <span className="chip">
-                🌱 Since {profile.createdAt.slice(0, 4)}
+                <Icon glyph="🌱" /> Since {profile.createdAt.slice(0, 4)}
               </span>
             )}
             <a
@@ -499,7 +534,7 @@ function Dashboard({
               target="_blank"
               rel="noreferrer"
             >
-              🏅 Achievements →
+              <Icon glyph="🏅" /> Achievements →
             </a>
           </div>
         </div>
@@ -550,7 +585,7 @@ function Dashboard({
 
       {report.notes.map((n, i) => (
         <p className="note" key={i}>
-          ℹ️ {n}
+          <Icon glyph="ℹ️" /> {n}
         </p>
       ))}
     </>

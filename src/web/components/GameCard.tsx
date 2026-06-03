@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Report } from "../../core/index.js";
 import { deriveGamification } from "../achievements.js";
 import { CountUp } from "./CountUp.js";
+import { Icon } from "./Icon.js";
 
 export function GameCard({ report }: { report: Report }) {
   const g = useMemo(() => deriveGamification(report), [report]);
@@ -41,7 +42,9 @@ export function GameCard({ report }: { report: Report }) {
             key={b.label}
             title={b.desc}
           >
-            <span className="badge-icon">{b.icon}</span>
+            <span className="badge-icon">
+              <Icon glyph={b.icon} label={b.label} />
+            </span>
             <span className="badge-label">{b.label}</span>
           </div>
         ))}

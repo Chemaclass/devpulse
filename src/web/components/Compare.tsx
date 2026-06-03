@@ -2,6 +2,7 @@ import { Suspense, useState } from "react";
 import { derivePersona, Persona, Report } from "../../core/index.js";
 import { TypeRadarCompare, YearBarsCompare } from "./Charts.js";
 import { CountUp } from "./CountUp.js";
+import { Icon } from "./Icon.js";
 import { Skyline3D } from "./Skyline3D.js";
 
 const A_FILL = "rgba(111,176,106,0.22)";
@@ -179,7 +180,15 @@ export function Compare({ a, b, onExit, onView }: Props) {
         <h2>Head to head</h2>
         <div className="compare-head-actions">
           <button className="share-btn" onClick={shareBattle}>
-            {copied ? "✓ Copied" : "⚔️ Share battle"}
+            {copied ? (
+              <>
+                <Icon glyph="✓" /> Copied
+              </>
+            ) : (
+              <>
+                <Icon glyph="⚔️" /> Share battle
+              </>
+            )}
           </button>
           <button className="share-btn" onClick={onExit}>
             ← Back
@@ -195,7 +204,11 @@ export function Compare({ a, b, onExit, onView }: Props) {
               className={`sb-card${leader === r ? " sb-leader" : ""}`}
               style={{ borderColor: leader === r ? accent : undefined }}
             >
-              {leader === r && <div className="sb-crown">👑</div>}
+              {leader === r && (
+                <div className="sb-crown">
+                  <Icon glyph="👑" label="Leader" />
+                </div>
+              )}
               <img
                 src={r.profile.avatarUrl}
                 alt={r.profile.login}
@@ -204,7 +217,9 @@ export function Compare({ a, b, onExit, onView }: Props) {
                 title={`View @${r.profile.login} on DevPulse`}
                 onClick={() => onView(r.profile.login)}
               />
-              <div className="sb-emoji">{p.emoji}</div>
+              <div className="sb-emoji">
+                <Icon glyph={p.emoji} label={p.title} />
+              </div>
               <div className="sb-name">{r.profile.name ?? r.profile.login}</div>
               <a
                 className="sb-handle"
@@ -222,7 +237,7 @@ export function Compare({ a, b, onExit, onView }: Props) {
                 target="_blank"
                 rel="noreferrer"
               >
-                🏅 GitHub achievements
+                <Icon glyph="🏅" /> GitHub achievements
               </a>
               <div className="sb-wins" style={{ color: accent }}>
                 {wins} <span>win{wins === 1 ? "" : "s"}</span>
@@ -239,7 +254,9 @@ export function Compare({ a, b, onExit, onView }: Props) {
       <div className="fun-facts">
         {facts.map((f, i) => (
           <div className="fact" key={i}>
-            <span className="fact-icon">{f.icon}</span>
+            <span className="fact-icon">
+              <Icon glyph={f.icon} />
+            </span>
             <span className="fact-text">{f.text}</span>
           </div>
         ))}

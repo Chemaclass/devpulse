@@ -1,4 +1,5 @@
 import { CountUp } from "./CountUp.js";
+import { Icon } from "./Icon.js";
 
 export function StatTile({
   className,
@@ -15,7 +16,9 @@ export function StatTile({
 }) {
   return (
     <div className={`stat ${className ?? ""}`}>
-      <span className="spark-icon">{icon}</span>
+      <span className="spark-icon">
+        <Icon glyph={icon} />
+      </span>
       <div className="value">
         <CountUp value={value} />
       </div>
