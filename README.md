@@ -8,17 +8,15 @@
 
 A small Vite + React + TypeScript app (plus a matching Node CLI) that runs entirely in the browser on GitHub Pages.
 
-![DevPulse](https://opengraph.githubassets.com/1/Chemaclass/devpulse)
-
 ## ✨ Features
 
-- **Overall dashboard** — all-time totals, streaks, active days, best day, and recent-activity charts.
-- **Developer archetype** — a fun persona (Shipper, Guardian, Machine…) from the activity mix, plus chronotype, favorite day and peak month.
-- **3D forest** — the calendar as a rotatable forest of trees (taller = more), with a 2D grid toggle.
-- **Compare two users** — a head-to-head with a scoreboard, fun facts, overlaid charts and side-by-side forests.
-- **Gamification** — an activity level and unlockable achievement badges.
+- **Overall dashboard**: all-time totals, streaks, active days, best day, and recent-activity charts.
+- **Developer archetype**: a fun persona (Shipper, Guardian, Machine…) from the activity mix, plus chronotype, favorite day and peak month.
+- **3D forest**: the calendar as a rotatable forest of trees (taller = more), with a 2D grid toggle.
+- **Compare two users**: a head-to-head with a scoreboard, fun facts, overlaid charts and side-by-side forests.
+- **Gamification**: an activity level and unlockable achievement badges.
 - **Top languages**, **light/dark themes**, and **shareable URLs** (`?u=`, `?d=`, `?mode=`, `?vs=`).
-- **Optional token** — paste a GitHub PAT (kept in your browser session) for higher rate limits and real per-repo history.
+- **Optional token**: paste a GitHub PAT (kept in your browser session) for higher rate limits and real per-repo history.
 
 ## 🚀 Quick start
 
@@ -58,15 +56,9 @@ A framework-agnostic **core** (`src/core`) fetches and aggregates everything int
 
 So the heatmap and streaks span years, while the per-project breakdown covers roughly the last 90 days. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the architecture, data flow and contribution recipes.
 
-## 🌐 Deploy your own
-
-1. Fork the repo.
-2. **Settings → Pages → Source = GitHub Actions** (one time).
-3. Push to `main`; the workflow builds and publishes. `vite.config.ts` uses `base: "./"`, so it works on a project page, user page or custom domain with no config.
-
 ## 🤝 Contributing
 
-Contributions welcome — see **[CONTRIBUTING.md](CONTRIBUTING.md)**. Good first issues are tagged [`good first issue`](https://github.com/Chemaclass/devpulse/labels/good%20first%20issue).
+Contributions welcome. See **[CONTRIBUTING.md](CONTRIBUTING.md)**. Good first issues are tagged [`good first issue`](https://github.com/Chemaclass/devpulse/labels/good%20first%20issue).
 
 ## License
 
