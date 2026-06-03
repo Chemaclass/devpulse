@@ -12,6 +12,7 @@ import {
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
 import {
+  CalendarDay,
   CONTRIBUTION_TYPES,
   ContributionType,
   DayStats,
@@ -48,20 +49,62 @@ const TYPE_LABELS: Record<ContributionType, string> = {
 const tickColor = "#9aa489";
 const gridColor = "rgba(150,165,120,0.1)";
 
-export function DailyStackedChart({ byDay }: { byDay: DayStats[] }) {
-  // oldest -> newest for the timeline
-  const days = [...byDay].sort((a, b) => a.date.localeCompare(b.date));
-  const labels = days.map((d) => d.date.slice(5));
+const CALENDAR_COLOR = "rgba(150,165,120,0.35)";
+const DEFAULT_DAYS = 30;
+
+/**
+ * Daily contributions over the last `lookback` calendar days. The events feed
+ * is capped (~300 events) and can cover only a day or two for very active
+ * users, so we anchor the timeline to the contribution calendar (accurate for
+ * everyone) and overlay the per-type breakdown wherever the events feed
+ * reaches. Days only known to the calendar render as a neutral block.
+ */
+export function DailyChart({
+  byDay,
+  days,
+  lookback = DEFAULT_DAYS,
+}: {
+  byDay: DayStats[];
+  days: CalendarDay[];
+  lookback?: number;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const window = days
+    .filter((d) => d.date <= today)
+    .slice(-lookback);
+  const byDate = new Map(byDay.map((d) => [d.date, d]));
+
+  const labels = window.map((d) => d.date.slice(5));
+
+  const typeDatasets = CONTRIBUTION_TYPES.map((t) => ({
+    label: TYPE_LABELS[t],
+    data: window.map((d) => byDate.get(d.date)?.[t] ?? 0),
+    backgroundColor: TYPE_COLORS[t],
+    borderRadius: 2,
+    stack: "s",
+  }));
+
+  // Per day, contributions on the calendar not captured by the events feed.
+  const calendarRemainder = window.map((d) => {
+    const detail = byDate.get(d.date);
+    const tracked = detail
+      ? CONTRIBUTION_TYPES.reduce((s, t) => s + detail[t], 0)
+      : 0;
+    return Math.max(0, d.count - tracked);
+  });
 
   const data = {
     labels,
-    datasets: CONTRIBUTION_TYPES.map((t) => ({
-      label: TYPE_LABELS[t],
-      data: days.map((d) => d[t]),
-      backgroundColor: TYPE_COLORS[t],
-      borderRadius: 3,
-      stack: "s",
-    })),
+    datasets: [
+      ...typeDatasets,
+      {
+        label: "Calendar",
+        data: calendarRemainder,
+        backgroundColor: CALENDAR_COLOR,
+        borderRadius: 2,
+        stack: "s",
+      },
+    ],
   };
 
   return (

@@ -9,7 +9,7 @@ import {
 } from "../core/index.js";
 import { Landing, Skeleton } from "./components/AppStates.js";
 import { Bars, BarDatum } from "./components/Bars.js";
-import { DailyStackedChart, TypeDoughnut } from "./components/Charts.js";
+import { DailyChart, TypeDoughnut } from "./components/Charts.js";
 import { Feed } from "./components/Feed.js";
 import { GameCard } from "./components/GameCard.js";
 import {
@@ -558,12 +558,12 @@ function OverallView({
 
       <div className="grid">
         <div className="card col-8">
-          <h3>Daily contributions by type</h3>
+          <h3>Daily contributions · last 30 days</h3>
           <div style={{ height: 280 }}>
-            {byDay.length ? (
-              <DailyStackedChart byDay={byDay} />
+            {calendar.days.length ? (
+              <DailyChart byDay={byDay} days={calendar.days} />
             ) : (
-              <p className="muted">No recent events to chart.</p>
+              <p className="muted">No contributions to chart.</p>
             )}
           </div>
         </div>
