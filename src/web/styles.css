@@ -998,11 +998,19 @@ footer a { color: var(--violet); }
   flex: none;
   display: grid;
   place-items: center;
+}
+.gl-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, var(--bg-2) 56%, transparent 57%),
-    conic-gradient(var(--cyan) var(--pct, 0%), var(--panel-soft) 0);
-  border: 1px solid var(--panel-border);
+  background: conic-gradient(
+    var(--cyan) var(--pct, 0%),
+    var(--panel-soft) 0
+  );
+  /* Punch out the center so it's a true ring over the card. */
+  -webkit-mask: radial-gradient(circle, transparent 57%, #000 58%);
+  mask: radial-gradient(circle, transparent 57%, #000 58%);
 }
 .gl-num {
   font-family: var(--font-display);

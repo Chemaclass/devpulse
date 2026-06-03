@@ -37,8 +37,14 @@ function titleFor(level: number): string {
  * with a progress bar, and a set of unlockable achievement badges. Purely
  * presentational and derived from the existing Report (no extra requests).
  */
+function yearsSince(iso: string): number {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return 0;
+  return (Date.now() - then) / (365.25 * 24 * 3600 * 1000);
+}
+
 export function deriveGamification(report: Report): Gamification {
-  const { byType, events, languages, calendar } = report;
+  const { byType, events, languages, calendar, byRepo, profile } = report;
 
   // Weighted score: shipping and reviewing are worth more than raw commits.
   const score =
@@ -105,6 +111,42 @@ export function deriveGamification(report: Report): Gamification {
       label: "Star Magnet",
       desc: "500+ stars across public repos",
       earned: totalStars >= 500,
+    },
+    {
+      icon: "🏆",
+      label: "Centurion",
+      desc: "A single day with 50+ contributions",
+      earned: (calendar.bestDay?.count ?? 0) >= 50,
+    },
+    {
+      icon: "⚡",
+      label: "Prolific",
+      desc: "10,000+ all-time contributions",
+      earned: calendar.total >= 10000,
+    },
+    {
+      icon: "💎",
+      label: "Ironclad",
+      desc: "100+ day longest streak",
+      earned: calendar.longestStreak >= 100,
+    },
+    {
+      icon: "🧭",
+      label: "Explorer",
+      desc: "8+ projects touched recently",
+      earned: byRepo.length >= 8,
+    },
+    {
+      icon: "🌍",
+      label: "Influencer",
+      desc: "1,000+ followers",
+      earned: profile.followers >= 1000,
+    },
+    {
+      icon: "🎂",
+      label: "Veteran",
+      desc: "10+ years on GitHub",
+      earned: yearsSince(profile.createdAt) >= 10,
     },
   ];
 
