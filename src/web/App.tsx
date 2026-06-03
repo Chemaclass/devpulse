@@ -1,15 +1,15 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ContributionType,
+  TContributionType,
   derivePersona,
   getReport,
   GitHubError,
   parseUsername,
-  Persona as TPersona,
-  Report,
+  TPersona,
+  TReport,
 } from "../core/index.js";
 import { Landing, Skeleton } from "./components/AppStates.js";
-import { Bars, BarDatum } from "./components/Bars.js";
+import { Bars, TBarDatum } from "./components/Bars.js";
 import {
   DailyChart,
   TypeDoughnut,
@@ -135,7 +135,7 @@ function ShareTools({ login, persona }: { login: string; persona: TPersona }) {
 
 export function App() {
   const [query, setQuery] = useState("");
-  const [report, setReport] = useState<Report | null>(null);
+  const [report, setReport] = useState<TReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("overall");
@@ -146,7 +146,7 @@ export function App() {
     date: string | null;
   } | null>(null);
   // Second user for side-by-side comparison.
-  const [vsReport, setVsReport] = useState<Report | null>(null);
+  const [vsReport, setVsReport] = useState<TReport | null>(null);
   const [vsLoading, setVsLoading] = useState(false);
   const [vsError, setVsError] = useState<string | null>(null);
   const [pendingVs, setPendingVs] = useState<string | null>(null);
@@ -467,7 +467,7 @@ function Dashboard({
   vsLoading,
   vsError,
 }: {
-  report: Report;
+  report: TReport;
   mode: Mode;
   setMode: (m: Mode) => void;
   selectedDate: string | null;
@@ -596,16 +596,16 @@ function OverallView({
   report,
   onPickDay,
 }: {
-  report: Report;
+  report: TReport;
   onPickDay: (date: string) => void;
 }) {
   const { calendar, byType, byRepo, byDay, window } = report;
 
-  const repoBars: BarDatum[] = byRepo
+  const repoBars: TBarDatum[] = byRepo
     .slice(0, 10)
     .map((r) => ({ name: r.repo, value: r.total, href: r.repoUrl }));
 
-  const langBars: BarDatum[] = report.languages
+  const langBars: TBarDatum[] = report.languages
     .slice(0, 8)
     .map((l) => ({ name: l.language, value: l.repos }));
 
@@ -614,7 +614,7 @@ function OverallView({
   const yearStats = report.yearStats;
   const mixByType = yearStats?.byType ?? byType;
   const mixSuffix = yearStats ? " · last year" : "";
-  const projectBars: BarDatum[] = yearStats
+  const projectBars: TBarDatum[] = yearStats
     ? yearStats.topRepos
         .slice(0, 10)
         .map((r) => ({ name: r.repo, value: r.total, href: r.repoUrl }))
@@ -768,13 +768,13 @@ function DayView({
   report,
   date,
 }: {
-  report: Report;
+  report: TReport;
   date: string | null;
 }) {
   const data = useMemo(() => {
     if (!date) return null;
     const events = report.events.filter((e) => e.date === date);
-    const byType: Record<ContributionType, number> = {
+    const byType: Record<TContributionType, number> = {
       commit: 0,
       pullRequest: 0,
       issue: 0,
@@ -791,7 +791,7 @@ function DayView({
     const calCount =
       report.calendar.days.find((d) => d.date === date)?.count ?? null;
     const total = Object.values(byType).reduce((a, b) => a + b, 0);
-    const repoBars: BarDatum[] = [...repoTotals.entries()]
+    const repoBars: TBarDatum[] = [...repoTotals.entries()]
       .map(([name, v]) => ({ name, value: v.total, href: v.url }))
       .sort((a, b) => b.value - a.value);
     return { events, byType, total, calCount, repoBars };

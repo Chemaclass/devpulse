@@ -1,11 +1,11 @@
-import { CalendarDay, CalendarSummary, GitHubError } from "./types.js";
+import { TCalendarDay, TCalendarSummary, GitHubError } from "./types.js";
 
 // Public, CORS-enabled proxy that exposes the GitHub contribution calendar
 // as JSON for any username, without authentication.
 // See: https://github.com/grubersjoe/github-contributions-api
 const CALENDAR_API = "https://github-contributions-api.jogruber.de/v4";
 
-interface JogruberResponse {
+type TJogruberResponse = {
   total: Record<string, number>;
   contributions: Array<{ date: string; count: number; level: number }>;
 }
@@ -17,7 +17,7 @@ interface JogruberResponse {
 export async function fetchCalendar(
   username: string,
   fetchImpl: typeof fetch = fetch,
-): Promise<CalendarSummary> {
+): Promise<TCalendarSummary> {
   const url = `${CALENDAR_API}/${encodeURIComponent(username)}?y=all`;
   let res: Response;
   try {
@@ -41,8 +41,8 @@ export async function fetchCalendar(
     );
   }
 
-  const data = (await res.json()) as JogruberResponse;
-  const days: CalendarDay[] = (data.contributions ?? [])
+  const data = (await res.json()) as TJogruberResponse;
+  const days: TCalendarDay[] = (data.contributions ?? [])
     .map((d) => ({ date: d.date, count: d.count, level: d.level }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -50,13 +50,13 @@ export async function fetchCalendar(
 }
 
 export function summarizeCalendar(
-  days: CalendarDay[],
+  days: TCalendarDay[],
   totalByYear: Record<string, number>,
-): CalendarSummary {
+): TCalendarSummary {
   const total = days.reduce((s, d) => s + d.count, 0);
   const activeDays = days.filter((d) => d.count > 0).length;
 
-  let bestDay: CalendarDay | null = null;
+  let bestDay: TCalendarDay | null = null;
   for (const d of days) {
     if (!bestDay || d.count > bestDay.count) bestDay = d;
   }
@@ -81,7 +81,7 @@ function todayUTC(): string {
 }
 
 export function computeStreaks(
-  days: CalendarDay[],
+  days: TCalendarDay[],
   today: string = todayUTC(),
 ): {
   current: number;

@@ -7,7 +7,7 @@ import {
   fetchPublicEvents,
   fetchTopLanguages,
 } from "./github.js";
-import { Report } from "./types.js";
+import { TReport } from "./types.js";
 
 export * from "./types.js";
 export { buildReport } from "./aggregate.js";
@@ -19,12 +19,12 @@ export {
   fetchTopLanguages,
 } from "./github.js";
 export { derivePersona } from "./persona.js";
-export type { Persona, PersonaTrait } from "./persona.js";
+export type { TPersona, TPersonaTrait } from "./persona.js";
 
 export { clearReportCache } from "./cache.js";
 
 /**
- * One-shot: fetch every public source for a username and assemble a Report.
+ * One-shot: fetch every public source for a username and assemble a TReport.
  * Works in the browser and in Node (both have global fetch on supported runtimes).
  * Successful results are cached for ~30 minutes (in memory + sessionStorage).
  */
@@ -32,7 +32,7 @@ export async function getReport(
   username: string,
   fetchImpl: typeof fetch = fetch,
   token?: string,
-): Promise<Report> {
+): Promise<TReport> {
   const clean = username.trim().replace(/^@/, "");
   if (!/^[a-zA-Z0-9-]{1,39}$/.test(clean)) {
     throw new Error(

@@ -13,10 +13,10 @@ import {
 } from "chart.js";
 import { Bar, Doughnut, Radar } from "react-chartjs-2";
 import {
-  CalendarDay,
+  TCalendarDay,
   CONTRIBUTION_TYPES,
-  ContributionType,
-  DayStats,
+  TContributionType,
+  TDayStats,
 } from "../../core/types.js";
 import { useTheme } from "../theme.js";
 
@@ -33,7 +33,7 @@ ChartJS.register(
   Tooltip,
 );
 
-const TYPE_COLORS: Record<ContributionType, string> = {
+const TYPE_COLORS: Record<TContributionType, string> = {
   commit: "#74b06a", // leaf green
   pullRequest: "#6f8fb0", // dusk sky
   issue: "#e3b341", // golden hour
@@ -41,7 +41,7 @@ const TYPE_COLORS: Record<ContributionType, string> = {
   other: "#9aa489", // muted moss
 };
 
-const TYPE_LABELS: Record<ContributionType, string> = {
+const TYPE_LABELS: Record<TContributionType, string> = {
   commit: "Commits",
   pullRequest: "Pull requests",
   issue: "Issues",
@@ -80,8 +80,8 @@ export function DailyChart({
   days,
   lookback = DEFAULT_DAYS,
 }: {
-  byDay: DayStats[];
-  days: CalendarDay[];
+  byDay: TDayStats[];
+  days: TCalendarDay[];
   lookback?: number;
 }) {
   const { tickColor, gridColor } = useChartColors();
@@ -160,7 +160,7 @@ export function DailyChart({
 export function TypeDoughnut({
   byType,
 }: {
-  byType: Record<ContributionType, number>;
+  byType: Record<TContributionType, number>;
 }) {
   const { tickColor, sliceBorder } = useChartColors();
   const entries = CONTRIBUTION_TYPES.filter((t) => byType[t] > 0);
@@ -228,7 +228,7 @@ export function YearBars({
 export function TypeRadar({
   byType,
 }: {
-  byType: Record<ContributionType, number>;
+  byType: Record<TContributionType, number>;
 }) {
   const { tickColor, gridColor } = useChartColors();
   const data = {
@@ -273,7 +273,7 @@ const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
  * Uses the calendar (accurate for everyone) rather than the sparse events
  * feed, with weekends tinted amber.
  */
-export function WeekdayBars({ days }: { days: CalendarDay[] }) {
+export function WeekdayBars({ days }: { days: TCalendarDay[] }) {
   const { tickColor, gridColor } = useChartColors();
   const buckets = new Array(7).fill(0);
   for (const d of days) {
@@ -310,14 +310,14 @@ export function WeekdayBars({ days }: { days: CalendarDay[] }) {
   );
 }
 
-interface RadarSeries {
+type TRadarSeries = {
   label: string;
-  byType: Record<ContributionType, number>;
+  byType: Record<TContributionType, number>;
   color: string;
   fill: string;
 }
 
-export function TypeRadarCompare({ a, b }: { a: RadarSeries; b: RadarSeries }) {
+export function TypeRadarCompare({ a, b }: { a: TRadarSeries; b: TRadarSeries }) {
   const { tickColor, gridColor } = useChartColors();
   const series = [a, b];
   const data = {
@@ -351,13 +351,13 @@ export function TypeRadarCompare({ a, b }: { a: RadarSeries; b: RadarSeries }) {
   );
 }
 
-interface YearSeries {
+type TYearSeries = {
   label: string;
   totalByYear: Record<string, number>;
   color: string;
 }
 
-export function YearBarsCompare({ a, b }: { a: YearSeries; b: YearSeries }) {
+export function YearBarsCompare({ a, b }: { a: TYearSeries; b: TYearSeries }) {
   const { tickColor, gridColor } = useChartColors();
   const years = Array.from(
     new Set([...Object.keys(a.totalByYear), ...Object.keys(b.totalByYear)]),

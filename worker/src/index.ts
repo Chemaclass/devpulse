@@ -1,12 +1,12 @@
 import { ImageResponse } from "workers-og";
 
-interface Env {
+type TEnv = {
   SITE: string;
 }
 
 // ---- Minimal public-data fetch (mirrors src/core, kept tiny + dependency-free) ----
 
-interface CardData {
+type TCardData = {
   login: string;
   name: string;
   emoji: string;
@@ -36,7 +36,7 @@ function archetype(t: Record<string, number>, total: number) {
   return ARCHETYPES.allrounder;
 }
 
-async function loadCard(login: string): Promise<CardData | null> {
+async function loadCard(login: string): Promise<TCardData | null> {
   const gh = { "User-Agent": "DevPulse-OG", Accept: "application/vnd.github+json" };
   const [profileRes, calRes, eventsRes] = await Promise.all([
     fetch(`https://api.github.com/users/${encodeURIComponent(login)}`, { headers: gh }),
@@ -71,7 +71,10 @@ async function loadCard(login: string): Promise<CardData | null> {
   // Archetype from recent events.
   const byType: Record<string, number> = {};
   if (eventsRes.ok) {
-    const events = (await eventsRes.json()) as { type: string; payload: any }[];
+    const events = (await eventsRes.json()) as {
+      type: string;
+      payload?: { action?: string };
+    }[];
     if (Array.isArray(events)) {
       for (const e of events) {
         if (e.type === "PushEvent") byType.commit = (byType.commit ?? 0) + 1;
@@ -99,7 +102,7 @@ async function loadCard(login: string): Promise<CardData | null> {
 
 // ---- Image ----
 
-function ogImage(d: CardData) {
+function ogImage(d: TCardData) {
   const stat = (value: string, label: string, color: string) => `
     <div style="display:flex;flex-direction:column;">
       <span style="font-size:54px;font-weight:700;color:${color};">${value}</span>
@@ -128,7 +131,7 @@ function ogImage(d: CardData) {
 // ---- Worker ----
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: TEnv): Promise<Response> {
     const url = new URL(request.url);
 
     // 1) The image endpoint: /og?u=<login>

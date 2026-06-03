@@ -1,7 +1,7 @@
-import { ActivityEvent, ContributionType } from "../../core/types.js";
+import { TActivityEvent, TContributionType } from "../../core/types.js";
 import { Icon } from "./Icon.js";
 
-const TYPE_META: Record<ContributionType, { icon: string; label: string }> = {
+const TYPE_META: Record<TContributionType, { icon: string; label: string }> = {
   commit: { icon: "⬆️", label: "Commit" },
   pullRequest: { icon: "🔀", label: "PR" },
   issue: { icon: "🐛", label: "Issue" },
@@ -9,7 +9,7 @@ const TYPE_META: Record<ContributionType, { icon: string; label: string }> = {
   other: { icon: "•", label: "Activity" },
 };
 
-export function Feed({ events }: { events: ActivityEvent[] }) {
+export function Feed({ events }: { events: TActivityEvent[] }) {
   if (!events.length) {
     return <p className="muted">No public activity in this view.</p>;
   }

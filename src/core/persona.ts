@@ -1,26 +1,26 @@
-// Derives a fun "developer archetype" from a Report.
+// Derives a fun "developer archetype" from a TReport.
 // Pure and dependency-free so both the web app and the CLI can use it.
 
 import {
-  ActivityEvent,
-  CalendarDay,
-  ContributionType,
-  Report,
+  TActivityEvent,
+  TCalendarDay,
+  TContributionType,
+  TReport,
 } from "./types.js";
 
-export interface PersonaTrait {
+export type TPersonaTrait = {
   icon: string;
   label: string;
   value: string;
 }
 
-export interface Persona {
+export type TPersona = {
   emoji: string;
   title: string;
   tagline: string;
   /** css accent class, matches the glow-* helpers in styles.css */
   accent: string;
-  traits: PersonaTrait[];
+  traits: TPersonaTrait[];
 }
 
 const WEEKDAY_NAMES = [
@@ -60,24 +60,24 @@ function chronotype(hour: number): { emoji: string; label: string } {
   return { emoji: "🌙", label: "Late Nighter" };
 }
 
-const argmax = (a: number[]) =>
+const indexOfMax = (a: number[]) =>
   a.reduce((best, v, i) => (v > a[best] ? i : best), 0);
 
 /**
  * Peak hour of day from the detailed events feed. This is the only source
  * with timestamps, so it can be null when there are no recent events.
  */
-function peakHourFromEvents(events: ActivityEvent[]): number | null {
+function peakHourFromEvents(events: TActivityEvent[]): number | null {
   const hours = new Array(24).fill(0);
   for (const e of events) {
     const h = new Date(e.datetime).getUTCHours();
     if (!Number.isNaN(h)) hours[h] += Math.max(1, e.weight);
   }
-  const h = argmax(hours);
+  const h = indexOfMax(hours);
   return hours[h] > 0 ? h : null;
 }
 
-interface WeekdayProfile {
+type TWeekdayProfile = {
   favWeekday: number | null;
   weekendShare: number;
 }
@@ -87,7 +87,7 @@ interface WeekdayProfile {
  * (count-weighted). Far more representative than the ~90-day events feed,
  * which can be a single day and skew the numbers.
  */
-function weekdayProfileFromCalendar(days: CalendarDay[]): WeekdayProfile {
+function weekdayProfileFromCalendar(days: TCalendarDay[]): TWeekdayProfile {
   const buckets = new Array(7).fill(0);
   let weekend = 0;
   let total = 0;
@@ -99,7 +99,7 @@ function weekdayProfileFromCalendar(days: CalendarDay[]): WeekdayProfile {
     total += d.count;
     if (dow === 0 || dow === 6) weekend += d.count;
   }
-  const fd = argmax(buckets);
+  const fd = indexOfMax(buckets);
   return {
     favWeekday: buckets[fd] > 0 ? fd : null,
     weekendShare: total ? weekend / total : 0,
@@ -107,14 +107,14 @@ function weekdayProfileFromCalendar(days: CalendarDay[]): WeekdayProfile {
 }
 
 /** Month of the year with the most contributions, count-weighted. */
-function peakMonthFromCalendar(days: CalendarDay[]): number | null {
+function peakMonthFromCalendar(days: TCalendarDay[]): number | null {
   const buckets = new Array(12).fill(0);
   for (const d of days) {
     if (d.count <= 0) continue;
     const m = new Date(d.date + "T00:00:00Z").getUTCMonth();
     if (!Number.isNaN(m)) buckets[m] += d.count;
   }
-  const m = argmax(buckets);
+  const m = indexOfMax(buckets);
   return buckets[m] > 0 ? m : null;
 }
 
@@ -122,17 +122,24 @@ function pad2(n: number): string {
   return n < 10 ? `0${n}` : String(n);
 }
 
-interface Archetype {
+type TArchetype = {
   emoji: string;
   title: string;
   tagline: string;
   accent: string;
 }
 
+// Minimum share of a contribution type that tips the archetype its way.
+// Reviews are rarer, so a smaller share still signals a reviewer.
+const REVIEWER_SHARE = 0.2;
+const SHIPPER_SHARE = 0.35;
+const PLANNER_SHARE = 0.3;
+const MACHINE_SHARE = 0.6;
+
 function pickArchetype(
-  byType: Record<ContributionType, number>,
+  byType: Record<TContributionType, number>,
   total: number,
-): Archetype {
+): TArchetype {
   if (total === 0) {
     return {
       emoji: "🌱",
@@ -141,14 +148,13 @@ function pickArchetype(
       accent: "glow-green",
     };
   }
-  const share = (t: ContributionType) => byType[t] / total;
+  const share = (t: TContributionType) => byType[t] / total;
   const commit = share("commit");
   const pr = share("pullRequest");
   const issue = share("issue");
   const review = share("review");
 
-  // Reviews are rarer, so a smaller share still signals a reviewer.
-  if (review >= 0.2 && review >= pr && review >= issue) {
+  if (review >= REVIEWER_SHARE && review >= pr && review >= issue) {
     return {
       emoji: "🛡️",
       title: "The Guardian",
@@ -156,7 +162,7 @@ function pickArchetype(
       accent: "glow-cyan",
     };
   }
-  if (pr >= 0.35 && pr >= commit) {
+  if (pr >= SHIPPER_SHARE && pr >= commit) {
     return {
       emoji: "🚀",
       title: "The Shipper",
@@ -164,7 +170,7 @@ function pickArchetype(
       accent: "glow-violet",
     };
   }
-  if (issue >= 0.3 && issue >= commit) {
+  if (issue >= PLANNER_SHARE && issue >= commit) {
     return {
       emoji: "🗺️",
       title: "The Planner",
@@ -172,7 +178,7 @@ function pickArchetype(
       accent: "glow-amber",
     };
   }
-  if (commit >= 0.6) {
+  if (commit >= MACHINE_SHARE) {
     return {
       emoji: "🔨",
       title: "The Machine",
@@ -188,12 +194,12 @@ function pickArchetype(
   };
 }
 
-export function derivePersona(report: Report): Persona {
+export function derivePersona(report: TReport): TPersona {
   const { events, byType, calendar } = report;
   const total = Object.values(byType).reduce((a, b) => a + b, 0);
   const arch = pickArchetype(byType, total);
 
-  const traits: PersonaTrait[] = [];
+  const traits: TPersonaTrait[] = [];
 
   // Peak hour: only the events feed carries timestamps, and it's capped at
   // ~300 recent events. If those cluster in a day or two (common for very

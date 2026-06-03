@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { buildReport } from "./aggregate.js";
-import { ActivityEvent, CalendarSummary, Profile } from "./types.js";
+import { TActivityEvent, TCalendarSummary, TProfile } from "./types.js";
 
-const profile = { login: "x" } as Profile;
+const profile = { login: "x" } as TProfile;
 const calendar = {
   days: [],
   totalByYear: {},
@@ -12,9 +12,9 @@ const calendar = {
   bestDay: null,
   activeDays: 0,
   averagePerActiveDay: 0,
-} as CalendarSummary;
+} as TCalendarSummary;
 
-function ev(over: Partial<ActivityEvent>): ActivityEvent {
+function ev(over: Partial<TActivityEvent>): TActivityEvent {
   return {
     id: Math.random().toString(),
     date: "2026-06-02",

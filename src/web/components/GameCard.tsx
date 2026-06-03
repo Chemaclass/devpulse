@@ -1,10 +1,10 @@
 import { useMemo } from "react";
-import { Report } from "../../core/index.js";
+import { TReport } from "../../core/index.js";
 import { deriveGamification } from "../achievements.js";
 import { CountUp } from "./CountUp.js";
 import { Icon } from "./Icon.js";
 
-export function GameCard({ report }: { report: Report }) {
+export function GameCard({ report }: { report: TReport }) {
   const g = useMemo(() => deriveGamification(report), [report]);
   const earned = g.badges.filter((b) => b.earned).length;
   return (

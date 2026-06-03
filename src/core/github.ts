@@ -1,6 +1,11 @@
-import { ActivityEvent, GitHubError, LanguageStat, Profile } from "./types.js";
+import { TActivityEvent, GitHubError, TLanguageStat, TProfile } from "./types.js";
 
 const API = "https://api.github.com";
+
+// GitHub paginates list endpoints 100 items at a time (the max) and caps a
+// user's public event history at ~300 events (≈ last 90 days).
+const PAGE_SIZE = 100;
+const MAX_PUBLIC_EVENTS = 300;
 
 function ghHeaders(): Record<string, string> {
   // Public, unauthenticated access. We still send a UA + API version header
@@ -41,7 +46,7 @@ async function ghFetch(
 export async function fetchProfile(
   username: string,
   fetchImpl: typeof fetch = fetch,
-): Promise<Profile> {
+): Promise<TProfile> {
   const res = await ghFetch(
     `${API}/users/${encodeURIComponent(username)}`,
     fetchImpl,
@@ -76,28 +81,28 @@ export async function fetchPublicEvents(
   username: string,
   fetchImpl: typeof fetch = fetch,
   maxPages = 3,
-): Promise<{ events: ActivityEvent[]; notes: string[] }> {
+): Promise<{ events: TActivityEvent[]; notes: string[] }> {
   const notes: string[] = [];
-  const raw: RawEvent[] = [];
+  const raw: TRawEvent[] = [];
 
   for (let page = 1; page <= maxPages; page++) {
     const res = await ghFetch(
       `${API}/users/${encodeURIComponent(
         username,
-      )}/events/public?per_page=100&page=${page}`,
+      )}/events/public?per_page=${PAGE_SIZE}&page=${page}`,
       fetchImpl,
     );
     if (res.status === 404) {
       throw new GitHubError(`No GitHub user named "${username}".`, 404, "not_found");
     }
     if (!res.ok) break;
-    const batch = (await res.json()) as RawEvent[];
+    const batch = (await res.json()) as TRawEvent[];
     if (!Array.isArray(batch) || batch.length === 0) break;
     raw.push(...batch);
-    if (batch.length < 100) break;
+    if (batch.length < PAGE_SIZE) break;
   }
 
-  if (raw.length >= 300) {
+  if (raw.length >= MAX_PUBLIC_EVENTS) {
     notes.push(
       "GitHub caps public history at ~300 recent events, so the detailed breakdown may not reach a full 90 days for very active users.",
     );
@@ -105,12 +110,12 @@ export async function fetchPublicEvents(
 
   const events = raw
     .map(parseEvent)
-    .filter((e): e is ActivityEvent => e !== null);
+    .filter((e): e is TActivityEvent => e !== null);
 
   return { events, notes };
 }
 
-interface RawRepo {
+type TRawRepo = {
   fork: boolean;
   language: string | null;
   stargazers_count: number;
@@ -125,18 +130,18 @@ export async function fetchTopLanguages(
   username: string,
   fetchImpl: typeof fetch = fetch,
   maxPages = 2,
-): Promise<LanguageStat[]> {
+): Promise<TLanguageStat[]> {
   const tally = new Map<string, { repos: number; stars: number }>();
   try {
     for (let page = 1; page <= maxPages; page++) {
       const res = await ghFetch(
         `${API}/users/${encodeURIComponent(
           username,
-        )}/repos?per_page=100&page=${page}&sort=pushed&type=owner`,
+        )}/repos?per_page=${PAGE_SIZE}&page=${page}&sort=pushed&type=owner`,
         fetchImpl,
       );
       if (!res.ok) break;
-      const batch = (await res.json()) as RawRepo[];
+      const batch = (await res.json()) as TRawRepo[];
       if (!Array.isArray(batch) || batch.length === 0) break;
       for (const r of batch) {
         if (r.fork || !r.language) continue;
@@ -145,7 +150,7 @@ export async function fetchTopLanguages(
         e.stars += r.stargazers_count ?? 0;
         tally.set(r.language, e);
       }
-      if (batch.length < 100) break;
+      if (batch.length < PAGE_SIZE) break;
     }
   } catch {
     return [];
@@ -155,16 +160,39 @@ export async function fetchTopLanguages(
     .sort((a, b) => b.repos - a.repos || b.stars - a.stars);
 }
 
-export interface RawEvent {
+/** A pull request / issue / release as it appears nested in an event payload. */
+type TRawEventResource = {
+  title?: string;
+  name?: string;
+  number?: number;
+  html_url?: string;
+  tag_name?: string;
+};
+
+/** The union of payload fields this module reads across event types. */
+type TRawEventPayload = {
+  action?: string;
+  ref?: string;
+  ref_type?: string;
+  size?: number;
+  distinct_size?: number;
+  commits?: unknown[];
+  number?: number;
+  pull_request?: TRawEventResource;
+  issue?: TRawEventResource;
+  release?: TRawEventResource;
+};
+
+export type TRawEvent = {
   id: string;
   type: string;
   created_at: string;
   repo: { name: string };
-  payload: Record<string, any>;
+  payload: TRawEventPayload;
 }
 
-/** Normalize one raw GitHub event into an ActivityEvent (or null to skip). */
-export function parseEvent(ev: RawEvent): ActivityEvent | null {
+/** Normalize one raw GitHub event into a TActivityEvent (or null to skip). */
+export function parseEvent(ev: TRawEvent): TActivityEvent | null {
   const date = ev.created_at.slice(0, 10);
   const repo = ev.repo?.name ?? "unknown/unknown";
   const repoUrl = `https://github.com/${repo}`;

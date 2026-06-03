@@ -2,11 +2,11 @@ import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useMemo, useState } from "react";
 import * as THREE from "three";
-import { CalendarDay } from "../../core/types.js";
+import { TCalendarDay } from "../../core/types.js";
 import { useTheme } from "../theme.js";
 
-interface Props {
-  days: CalendarDay[];
+type TProps = {
+  days: TCalendarDay[];
   window?: number;
   onSelect?: (date: string) => void;
   /**
@@ -23,7 +23,7 @@ interface Props {
 const LEVEL_COLORS = ["#243a1f", "#2f5138", "#46824f", "#6fae5f", "#a7d98a"];
 const TRUNK_COLOR = "#5b4329";
 
-interface Tree {
+type TTree = {
   date: string;
   count: number;
   level: number;
@@ -31,7 +31,7 @@ interface Tree {
   row: number;
 }
 
-function buildTrees(days: CalendarDay[], window: number): Tree[] {
+function buildTrees(days: TCalendarDay[], window: number): TTree[] {
   const today = new Date().toISOString().slice(0, 10);
   const recent = days.filter((d) => d.date <= today).slice(-window);
   if (!recent.length) return [];
@@ -56,11 +56,11 @@ function Forest({
   onHover,
   onSelect,
 }: {
-  trees: Tree[];
+  trees: TTree[];
   numWeeks: number;
   scaleMax: number;
   colors: string[];
-  onHover: (t: Tree | null) => void;
+  onHover: (t: TTree | null) => void;
   onSelect?: (date: string) => void;
 }) {
   // Unit geometries scaled per tree, so everything is shared (5 foliage
@@ -167,12 +167,12 @@ export function Skyline3D({
   onSelect,
   scaleMax,
   colors = LEVEL_COLORS,
-}: Props) {
+}: TProps) {
   const { theme } = useTheme();
   const light = theme === "light";
   const bgColor = light ? "#eef1e6" : "#0f1310";
   const groundColor = light ? "#cdd8b8" : "#13200f";
-  const [hover, setHover] = useState<Tree | null>(null);
+  const [hover, setHover] = useState<TTree | null>(null);
   const trees = useMemo(() => buildTrees(days, window), [days, window]);
   const numWeeks = trees.length ? Math.max(...trees.map((t) => t.col)) + 1 : 0;
   const ownMax = Math.max(1, ...trees.map((t) => t.count));

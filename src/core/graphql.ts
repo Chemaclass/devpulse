@@ -1,4 +1,4 @@
-import { ContributionType, GitHubError, YearStats } from "./types.js";
+import { TContributionType, GitHubError, TYearStats } from "./types.js";
 
 // GitHub GraphQL endpoint. The personal access token is ONLY ever sent here
 // (api.github.com) — never to the public calendar proxy or anywhere else.
@@ -29,20 +29,20 @@ query($login: String!) {
   }
 }`;
 
-interface RepoContribution {
+type TRepoContribution = {
   repository: { nameWithOwner: string; url: string };
   contributions: { totalCount: number };
 }
 
-interface ContributionsCollection {
+type TContributionsCollection = {
   totalCommitContributions: number;
   totalPullRequestContributions: number;
   totalIssueContributions: number;
   totalPullRequestReviewContributions: number;
   totalRepositoryContributions: number;
-  commitContributionsByRepository: RepoContribution[];
-  pullRequestContributionsByRepository: RepoContribution[];
-  issueContributionsByRepository: RepoContribution[];
+  commitContributionsByRepository: TRepoContribution[];
+  pullRequestContributionsByRepository: TRepoContribution[];
+  issueContributionsByRepository: TRepoContribution[];
 }
 
 /**
@@ -54,7 +54,7 @@ export async function fetchYearStats(
   username: string,
   token: string,
   fetchImpl: typeof fetch = fetch,
-): Promise<YearStats> {
+): Promise<TYearStats> {
   let res: Response;
   try {
     res = await fetchImpl(GRAPHQL, {
@@ -84,12 +84,12 @@ export async function fetchYearStats(
   }
 
   const json = (await res.json()) as {
-    data?: { user?: { contributionsCollection?: ContributionsCollection } };
+    data?: { user?: { contributionsCollection?: TContributionsCollection } };
   };
   const cc = json.data?.user?.contributionsCollection;
   if (!cc) throw new GitHubError("No contributions data returned.");
 
-  const byType: Record<ContributionType, number> = {
+  const byType: Record<TContributionType, number> = {
     commit: cc.totalCommitContributions,
     pullRequest: cc.totalPullRequestContributions,
     issue: cc.totalIssueContributions,
@@ -99,7 +99,7 @@ export async function fetchYearStats(
 
   // Merge per-repo contributions across commits, PRs and issues.
   const repos = new Map<string, { url: string; total: number }>();
-  const add = (list: RepoContribution[] | undefined) => {
+  const add = (list: TRepoContribution[] | undefined) => {
     for (const r of list ?? []) {
       const key = r.repository.nameWithOwner;
       const entry = repos.get(key) ?? { url: r.repository.url, total: 0 };

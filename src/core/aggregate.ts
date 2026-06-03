@@ -1,17 +1,19 @@
 import {
-  ActivityEvent,
-  CalendarSummary,
-  ContributionType,
+  TActivityEvent,
+  TCalendarSummary,
+  TContributionType,
   CONTRIBUTION_TYPES,
-  DayStats,
-  LanguageStat,
-  Profile,
-  Report,
-  RepoStats,
-  YearStats,
+  TDayStats,
+  TLanguageStat,
+  TProfile,
+  TReport,
+  TRepoStats,
+  TYearStats,
 } from "./types.js";
 
-function emptyTypeRecord(): Record<ContributionType, number> {
+const MS_PER_DAY = 86_400_000;
+
+function emptyTypeRecord(): Record<TContributionType, number> {
   return { commit: 0, pullRequest: 0, issue: 0, review: 0, other: 0 };
 }
 
@@ -19,19 +21,19 @@ function emptyTypeRecord(): Record<ContributionType, number> {
  * Build the aggregated report from the three public data sources.
  */
 export function buildReport(args: {
-  profile: Profile;
-  calendar: CalendarSummary;
-  events: ActivityEvent[];
+  profile: TProfile;
+  calendar: TCalendarSummary;
+  events: TActivityEvent[];
   notes?: string[];
-  languages?: LanguageStat[];
-  yearStats?: YearStats;
-}): Report {
+  languages?: TLanguageStat[];
+  yearStats?: TYearStats;
+}): TReport {
   const { profile, calendar, events } = args;
   const notes = [...(args.notes ?? [])];
   const languages = args.languages ?? [];
 
-  const byDayMap = new Map<string, DayStats>();
-  const byRepoMap = new Map<string, RepoStats>();
+  const byDayMap = new Map<string, TDayStats>();
+  const byRepoMap = new Map<string, TRepoStats>();
   const byType = emptyTypeRecord();
 
   for (const ev of events) {
@@ -88,7 +90,7 @@ export function buildReport(args: {
   const days =
     from && to
       ? Math.round(
-          (Date.parse(to) - Date.parse(from)) / 86_400_000,
+          (Date.parse(to) - Date.parse(from)) / MS_PER_DAY,
         ) + 1
       : 0;
 

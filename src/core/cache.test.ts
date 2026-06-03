@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { clearReportCache, readReport, writeReport } from "./cache.js";
-import { Report } from "./types.js";
+import { TReport } from "./types.js";
 
-const report = { profile: { login: "x" } } as Report;
+const report = { profile: { login: "x" } } as TReport;
 const T0 = 1_000_000;
 const TTL = 30 * 60 * 1000;
 

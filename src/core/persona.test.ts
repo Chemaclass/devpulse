@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { derivePersona } from "./persona.js";
 import {
-  ActivityEvent,
-  CalendarDay,
-  ContributionType,
-  Report,
+  TActivityEvent,
+  TCalendarDay,
+  TContributionType,
+  TReport,
 } from "./types.js";
 
-function ev(datetime: string, type: ContributionType): ActivityEvent {
+function ev(datetime: string, type: TContributionType): TActivityEvent {
   return {
     id: datetime + type,
     date: datetime.slice(0, 10),
@@ -22,10 +22,10 @@ function ev(datetime: string, type: ContributionType): ActivityEvent {
 }
 
 function report(over: {
-  byType?: Partial<Record<ContributionType, number>>;
-  events?: ActivityEvent[];
-  days?: CalendarDay[];
-}): Report {
+  byType?: Partial<Record<TContributionType, number>>;
+  events?: TActivityEvent[];
+  days?: TCalendarDay[];
+}): TReport {
   const byType = {
     commit: 0,
     pullRequest: 0,
@@ -35,7 +35,7 @@ function report(over: {
     ...over.byType,
   };
   return {
-    profile: { login: "x" } as Report["profile"],
+    profile: { login: "x" } as TReport["profile"],
     generatedAt: "",
     calendar: {
       days: over.days ?? [],
@@ -88,7 +88,7 @@ describe("derivePersona archetype", () => {
 });
 
 describe("derivePersona traits", () => {
-  const days: CalendarDay[] = [
+  const days: TCalendarDay[] = [
     { date: "2026-06-06", count: 10, level: 4 }, // Saturday
     { date: "2026-06-13", count: 10, level: 4 }, // Saturday
   ];

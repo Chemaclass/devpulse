@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { getReport, parseUsername, GitHubError } from "../core/index.js";
 import { toMarkdown } from "./markdown.js";
 
-interface Args {
+type TArgs = {
   user: string;
   out: string;
   json: boolean;
@@ -12,8 +12,8 @@ interface Args {
   help: boolean;
 }
 
-function parseArgs(argv: string[]): Args {
-  const args: Args = {
+function parseArgs(argv: string[]): TArgs {
+  const args: TArgs = {
     user: "",
     out: "./out",
     json: true,

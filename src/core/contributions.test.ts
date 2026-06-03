@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { computeStreaks, summarizeCalendar } from "./contributions.js";
-import { CalendarDay } from "./types.js";
+import { TCalendarDay } from "./types.js";
 
 /** Build consecutive days starting at `start` with the given counts. */
-function days(start: string, counts: number[]): CalendarDay[] {
+function days(start: string, counts: number[]): TCalendarDay[] {
   let d = new Date(start + "T00:00:00Z");
   return counts.map((count) => {
     const date = d.toISOString().slice(0, 10);

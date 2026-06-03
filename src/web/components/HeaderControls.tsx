@@ -110,34 +110,3 @@ export function TokenControl() {
     </div>
   );
 }
-
-export function ShareButton({ login }: { login: string }) {
-  const [copied, setCopied] = useState(false);
-  async function copy() {
-    const url = `${window.location.origin}${window.location.pathname}?u=${login}`;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      /* clipboard blocked, ignore */
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
-  return (
-    <button
-      className="share-btn"
-      onClick={copy}
-      title="Copy a link to this report"
-    >
-      {copied ? (
-        <>
-          <Icon glyph="✓" /> Copied
-        </>
-      ) : (
-        <>
-          <Icon glyph="🔗" /> Share
-        </>
-      )}
-    </button>
-  );
-}

@@ -1,5 +1,5 @@
 import { Suspense, useState } from "react";
-import { derivePersona, Persona, Report } from "../../core/index.js";
+import { derivePersona, TPersona, TReport } from "../../core/index.js";
 import { TypeRadarCompare, YearBarsCompare } from "./Charts.js";
 import { CountUp } from "./CountUp.js";
 import { Icon } from "./Icon.js";
@@ -8,9 +8,9 @@ import { Skyline3D } from "./Skyline3D.js";
 const A_FILL = "rgba(111,176,106,0.22)";
 const B_FILL = "rgba(224,138,79,0.22)";
 
-interface Props {
-  a: Report;
-  b: Report;
+type TProps = {
+  a: TReport;
+  b: TReport;
   onExit: () => void;
   /** Open one contender as their own dedicated DevPulse report. */
   onView: (login: string) => void;
@@ -22,22 +22,22 @@ const B_ACCENT = "#e08a4f"; // terracotta
 const A_RAMP = ["#1b2616", "#2f5138", "#46824f", "#6fae5f", "#a7d98a"];
 const B_RAMP = ["#2a1c12", "#6e3f24", "#a85f33", "#e08a4f", "#f3b98a"];
 
-function busiestDay(r: Report): number {
+function busiestDay(r: TReport): number {
   return r.calendar.days.reduce((m, d) => (d.count > m ? d.count : m), 0);
 }
 
-function trait(p: Persona, label: string): string | undefined {
+function trait(p: TPersona, label: string): string | undefined {
   return p.traits.find((t) => t.label === label)?.value;
 }
 
-interface Fact {
+type TFact = {
   icon: string;
   text: string;
 }
 
 /** Punchy comparative facts, computed and filtered to the interesting ones. */
-function funFacts(a: Report, b: Report, pa: Persona, pb: Persona): Fact[] {
-  const out: Fact[] = [];
+function funFacts(a: TReport, b: TReport, pa: TPersona, pb: TPersona): TFact[] {
+  const out: TFact[] = [];
   const al = a.profile.login;
   const bl = b.profile.login;
   const at = a.calendar.total;
@@ -130,18 +130,18 @@ function funFacts(a: Report, b: Report, pa: Persona, pb: Persona): Fact[] {
   return out.slice(0, 6);
 }
 
-interface Metric {
+type TMetric = {
   label: string;
   a: number;
   b: number;
 }
 
-export function Compare({ a, b, onExit, onView }: Props) {
+export function Compare({ a, b, onExit, onView }: TProps) {
   const personaA = derivePersona(a);
   const personaB = derivePersona(b);
   const scaleMax = Math.max(1, busiestDay(a), busiestDay(b));
 
-  const metrics: Metric[] = [
+  const metrics: TMetric[] = [
     { label: "All-time contributions", a: a.calendar.total, b: b.calendar.total },
     { label: "Current streak", a: a.calendar.currentStreak, b: b.calendar.currentStreak },
     { label: "Longest streak", a: a.calendar.longestStreak, b: b.calendar.longestStreak },
@@ -252,8 +252,8 @@ export function Compare({ a, b, onExit, onView }: Props) {
 
       {/* Fun facts */}
       <div className="fun-facts">
-        {facts.map((f, i) => (
-          <div className="fact" key={i}>
+        {facts.map((f) => (
+          <div className="fact" key={`${f.icon}-${f.text}`}>
             <span className="fact-icon">
               <Icon glyph={f.icon} />
             </span>

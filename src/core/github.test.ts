@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parseEvent, RawEvent } from "./github.js";
+import { parseEvent, TRawEvent } from "./github.js";
 
-function raw(type: string, payload: Record<string, unknown>): RawEvent {
+function raw(type: string, payload: Record<string, unknown>): TRawEvent {
   return {
     id: "1",
     type,

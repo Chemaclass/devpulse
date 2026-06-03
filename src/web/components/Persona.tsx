@@ -1,12 +1,12 @@
-import { Persona as TPersona } from "../../core/index.js";
+import { TPersona } from "../../core/index.js";
 import { Icon } from "./Icon.js";
 
-interface Props {
+type TProps = {
   persona: TPersona;
   login: string;
 }
 
-export function Persona({ persona, login }: Props) {
+export function Persona({ persona, login }: TProps) {
   return (
     <div className={`persona ${persona.accent}`}>
       <div className="persona-head">

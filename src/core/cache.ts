@@ -1,4 +1,4 @@
-import { Report } from "./types.js";
+import { TReport } from "./types.js";
 
 // Two-tier report cache. The public GitHub API allows only 60 requests/hour
 // per IP without a token, and each report is several requests, so re-querying
@@ -13,14 +13,14 @@ import { Report } from "./types.js";
 const TTL_MS = 30 * 60 * 1000;
 const PREFIX = "devpulse-report:";
 
-interface Entry {
-  report: Report;
+type TEntry = {
+  report: TReport;
   expires: number;
 }
 
 // Minimal storage shape, so core stays free of the DOM lib while still using
 // sessionStorage when it exists (the browser); in Node it is simply absent.
-interface KeyValueStore {
+type TKeyValueStore = {
   readonly length: number;
   key(index: number): string | null;
   getItem(key: string): string | null;
@@ -28,12 +28,12 @@ interface KeyValueStore {
   removeItem(key: string): void;
 }
 
-const memory = new Map<string, Entry>();
+const memory = new Map<string, TEntry>();
 
 /** sessionStorage, or null when unavailable (Node, or blocked by privacy). */
-function session(): KeyValueStore | null {
+function session(): TKeyValueStore | null {
   try {
-    const store = (globalThis as { sessionStorage?: KeyValueStore })
+    const store = (globalThis as { sessionStorage?: TKeyValueStore })
       .sessionStorage;
     return store ?? null;
   } catch {
@@ -42,7 +42,7 @@ function session(): KeyValueStore | null {
 }
 
 /** Return a cached report for the key if present and unexpired. */
-export function readReport(key: string, now: number): Report | null {
+export function readReport(key: string, now: number): TReport | null {
   const mem = memory.get(key);
   if (mem) {
     if (mem.expires > now) return mem.report;
@@ -54,7 +54,7 @@ export function readReport(key: string, now: number): Report | null {
   try {
     const raw = store.getItem(PREFIX + key);
     if (!raw) return null;
-    const entry = JSON.parse(raw) as Entry;
+    const entry = JSON.parse(raw) as TEntry;
     if (entry.expires > now) {
       memory.set(key, entry); // promote back into L1
       return entry.report;
@@ -67,8 +67,8 @@ export function readReport(key: string, now: number): Report | null {
 }
 
 /** Store a report under the key in both tiers. */
-export function writeReport(key: string, report: Report, now: number): void {
-  const entry: Entry = { report, expires: now + TTL_MS };
+export function writeReport(key: string, report: TReport, now: number): void {
+  const entry: TEntry = { report, expires: now + TTL_MS };
   memory.set(key, entry);
 
   const store = session();

@@ -108,7 +108,7 @@ const GLYPHS: ReadonlyMap<string, LucideIcon> = new Map(
   }).map(([glyph, icon]) => [normalize(glyph), icon]),
 );
 
-export interface IconProps {
+export type TIconProps = {
   /** Emoji glyph used as the icon key (the cross-platform source of truth). */
   glyph: string;
   /** Size in px or any CSS length; defaults to 1em so it tracks font-size. */
@@ -119,7 +119,7 @@ export interface IconProps {
 }
 
 /** Render an emoji glyph as a crisp, currentColor SVG icon. */
-export function Icon({ glyph, size = "1em", className, label }: IconProps) {
+export function Icon({ glyph, size = "1em", className, label }: TIconProps) {
   const Glyph = GLYPHS.get(normalize(glyph));
   const cls = ["dp-icon", className].filter(Boolean).join(" ");
 

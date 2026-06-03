@@ -1,5 +1,5 @@
 import { derivePersona } from "../core/persona.js";
-import { Report } from "../core/types.js";
+import { TReport } from "../core/types.js";
 
 function bar(value: number, max: number, width = 24): string {
   if (max <= 0) return "";
@@ -7,7 +7,7 @@ function bar(value: number, max: number, width = 24): string {
   return "█".repeat(filled) + "░".repeat(width - filled);
 }
 
-export function toMarkdown(report: Report): string {
+export function toMarkdown(report: TReport): string {
   const { profile, calendar, byDay, byRepo, byType, window } = report;
   const lines: string[] = [];
 

@@ -1,20 +1,20 @@
-import { Report } from "../core/index.js";
+import { TReport } from "../core/index.js";
 
-export interface Badge {
+export type TBadge = {
   icon: string;
   label: string;
   desc: string;
   earned: boolean;
 }
 
-export interface Gamification {
+export type TGamification = {
   score: number;
   level: number;
   title: string;
   prevLevelAt: number;
   nextLevelAt: number;
   pctToNext: number;
-  badges: Badge[];
+  badges: TBadge[];
 }
 
 const LEVEL_TITLES = [
@@ -35,7 +35,7 @@ function titleFor(level: number): string {
 /**
  * Turn the recent activity window into a playful "activity score", a level
  * with a progress bar, and a set of unlockable achievement badges. Purely
- * presentational and derived from the existing Report (no extra requests).
+ * presentational and derived from the existing TReport (no extra requests).
  */
 function yearsSince(iso: string): number {
   const then = new Date(iso).getTime();
@@ -44,7 +44,7 @@ function yearsSince(iso: string): number {
 }
 
 /** Total contributions in the last `lookback` days, from the calendar. */
-function recentContributions(report: Report, lookback = 90): number {
+function recentContributions(report: TReport, lookback = 90): number {
   const today = new Date().toISOString().slice(0, 10);
   const cutoff = new Date(Date.now() - lookback * 86_400_000)
     .toISOString()
@@ -55,7 +55,7 @@ function recentContributions(report: Report, lookback = 90): number {
   );
 }
 
-export function deriveGamification(report: Report): Gamification {
+export function deriveGamification(report: TReport): TGamification {
   const { byType, events, languages, calendar, byRepo, profile } = report;
 
   // Score from the contribution calendar (accurate for everyone), not the
@@ -71,7 +71,7 @@ export function deriveGamification(report: Report): Gamification {
 
   const totalStars = languages.reduce((s, l) => s + l.stars, 0);
 
-  const badges: Badge[] = [
+  const badges: TBadge[] = [
     {
       icon: "⬆️",
       label: "Committer",

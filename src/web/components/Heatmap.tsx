@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { computeStreaks } from "../../core/contributions.js";
-import { CalendarDay } from "../../core/types.js";
+import { TCalendarDay } from "../../core/types.js";
 
-interface Props {
-  days: CalendarDay[];
+type TProps = {
+  days: TCalendarDay[];
   /** number of trailing days to show (default ~53 weeks) */
   window?: number;
   selectedDate?: string | null;
@@ -16,8 +16,8 @@ const MONTHS = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-interface Hover {
-  day: CalendarDay;
+type THover = {
+  day: TCalendarDay;
   x: number;
   y: number;
 }
@@ -27,8 +27,8 @@ export function Heatmap({
   window = 371,
   selectedDate,
   onSelect,
-}: Props) {
-  const [hover, setHover] = useState<Hover | null>(null);
+}: TProps) {
+  const [hover, setHover] = useState<THover | null>(null);
 
   const recent = useMemo(() => {
     // The contributions API pads the calendar to year-end with empty future
@@ -44,8 +44,8 @@ export function Heatmap({
   }, [recent]);
 
   // Pad the start so the first column begins on a Sunday-aligned grid.
-  const cells: (CalendarDay | null)[] = useMemo(() => {
-    const out: (CalendarDay | null)[] = [];
+  const cells: (TCalendarDay | null)[] = useMemo(() => {
+    const out: (TCalendarDay | null)[] = [];
     if (recent.length) {
       const firstDow = new Date(recent[0].date + "T00:00:00Z").getUTCDay();
       for (let i = 0; i < firstDow; i++) out.push(null);
@@ -75,7 +75,7 @@ export function Heatmap({
     return labels;
   }, [cells, numWeeks]);
 
-  function showTip(day: CalendarDay, e: React.MouseEvent) {
+  function showTip(day: TCalendarDay, e: React.MouseEvent) {
     setHover({ day, x: e.clientX, y: e.clientY });
   }
 
