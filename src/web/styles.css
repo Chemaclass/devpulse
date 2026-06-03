@@ -1131,21 +1131,29 @@ a.chip-link:hover {
 .badge-icon { font-size: 15px; }
 
 /* ---------- Compare ---------- */
-/* Modes + share live top-right of the profile; compare bar sits below. */
+/* Modes + share cluster, top-right of the profile; compare bar sits below. */
 .profile-actions {
   align-self: flex-start;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   gap: 10px;
-}
-.profile-actions .modes {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
-@media (max-width: 720px) {
+.profile-actions .modes {
+  flex-wrap: wrap;
+}
+/* Tablet: the cluster drops to its own line — span it, modes left / share right. */
+@media (max-width: 900px) {
   .profile-actions {
     width: 100%;
+    justify-content: space-between;
+  }
+}
+/* Phone: stack, full-width share. */
+@media (max-width: 520px) {
+  .profile-actions {
+    flex-direction: column;
     align-items: stretch;
   }
   .profile-actions .modes {
