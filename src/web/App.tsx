@@ -493,10 +493,8 @@ function Dashboard({
             </a>
           </div>
         </div>
-      </div>
-
-      <div className="dash-toolbar">
-        <div className="dash-toolbar-row">
+        <div className="spacer" />
+        <div className="profile-actions">
           <div className="modes">
             <button
               className={mode === "overall" ? "active" : ""}
@@ -527,8 +525,9 @@ function Dashboard({
           </div>
           <ShareTools login={profile.login} persona={persona} />
         </div>
-        <CompareBar onCompare={onCompare} loading={vsLoading} error={vsError} />
       </div>
+
+      <CompareBar onCompare={onCompare} loading={vsLoading} error={vsError} />
 
       {mode === "overall" ? (
         <OverallView report={report} onPickDay={(d) => {

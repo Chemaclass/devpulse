@@ -1131,28 +1131,36 @@ a.chip-link:hover {
 .badge-icon { font-size: 15px; }
 
 /* ---------- Compare ---------- */
-/* Controls toolbar: a top row (modes + share) and the compare bar below. */
-.dash-toolbar {
+/* Modes + share live top-right of the profile; compare bar sits below. */
+.profile-actions {
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin: 0 0 18px;
+  align-items: flex-end;
+  gap: 10px;
 }
-.dash-toolbar-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+.profile-actions .modes {
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
-.dash-toolbar .modes {
-  flex-wrap: wrap;
+@media (max-width: 720px) {
+  .profile-actions {
+    width: 100%;
+    align-items: stretch;
+  }
+  .profile-actions .modes {
+    justify-content: flex-start;
+  }
+  .profile-actions .share-menu-wrap .share-btn {
+    width: 100%;
+  }
 }
 
 .compare-bar {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: 0 0 18px;
 }
 .compare-bar .cb-label {
   font-weight: 600;
