@@ -7,14 +7,20 @@ import {
   parseUsername,
   Report,
 } from "../core/index.js";
+import { Landing, Skeleton } from "./components/AppStates.js";
 import { Bars, BarDatum } from "./components/Bars.js";
 import { DailyStackedChart, TypeDoughnut } from "./components/Charts.js";
-import { CountUp } from "./components/CountUp.js";
 import { Feed } from "./components/Feed.js";
+import { GameCard } from "./components/GameCard.js";
+import {
+  ShareButton,
+  ThemeToggle,
+  TokenControl,
+} from "./components/HeaderControls.js";
 import { Heatmap } from "./components/Heatmap.js";
 import { Persona } from "./components/Persona.js";
-import { deriveGamification } from "./achievements.js";
-import { useTheme } from "./theme.js";
+import { StatTile } from "./components/StatTile.js";
+import { setQueryParam, syncUrl } from "./lib/url.js";
 import { useToken } from "./token.js";
 
 // three.js is heavy; only load it when the 3D view is shown.
@@ -27,189 +33,6 @@ const Compare = lazy(() =>
 
 type Mode = "overall" | "latest" | "date";
 const EXAMPLES = ["torvalds", "gaearon", "chemaclass"];
-
-/** Reflect the current username in the URL so results are shareable. */
-function syncUrl(username: string) {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("u") === username) return;
-  params.set("u", username);
-  window.history.pushState({}, "", `?${params.toString()}`);
-}
-
-/** Add, update or remove a single query param without touching the others. */
-function setQueryParam(key: string, value: string | null) {
-  const params = new URLSearchParams(window.location.search);
-  if (value == null) params.delete(key);
-  else params.set(key, value);
-  const qs = params.toString();
-  window.history.replaceState(
-    {},
-    "",
-    qs ? `?${qs}` : window.location.pathname,
-  );
-}
-
-const FEATURES = [
-  {
-    icon: "🌳",
-    title: "A full year at a glance",
-    body: "Every public contribution as a living heatmap, with streaks, peak days and month-by-month rhythm.",
-  },
-  {
-    icon: "🧬",
-    title: "Your developer archetype",
-    body: "Shipper, Guardian, Machine… a playful read on how someone works, drawn from real activity.",
-  },
-  {
-    icon: "🔗",
-    title: "Shareable, no login",
-    body: "Public data only. Every report is a clean link you can send to anyone, nothing stored.",
-  },
-];
-
-function Landing() {
-  return (
-    <div className="landing">
-      {FEATURES.map((f) => (
-        <div className="landing-card" key={f.title}>
-          <span className="landing-icon">{f.icon}</span>
-          <h3>{f.title}</h3>
-          <p>{f.body}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Skeleton() {
-  return (
-    <div className="skeleton" aria-busy="true" aria-label="Loading report">
-      <div className="sk-profile">
-        <div className="sk sk-avatar" />
-        <div className="sk-lines">
-          <div className="sk sk-line w50" />
-          <div className="sk sk-line w30" />
-        </div>
-      </div>
-      <div className="sk sk-persona" />
-      <div className="sk-stats">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div className="sk sk-tile" key={i} />
-        ))}
-      </div>
-      <div className="sk sk-heatmap" />
-      <p className="sk-note muted">Pulling public contributions…</p>
-    </div>
-  );
-}
-
-function ThemeToggle() {
-  const { theme, toggle } = useTheme();
-  const isDark = theme === "dark";
-  return (
-    <button
-      className="theme-toggle"
-      onClick={toggle}
-      title={isDark ? "Switch to light" : "Switch to dark"}
-      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
-    >
-      {isDark ? "☀️" : "🌙"}
-    </button>
-  );
-}
-
-function TokenControl() {
-  const { token, setToken } = useToken();
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(token);
-  return (
-    <div className="token-control">
-      <button
-        className="token-btn"
-        onClick={() => {
-          setDraft(token);
-          setOpen((o) => !o);
-        }}
-        title={token ? "GitHub token set" : "Add a GitHub token (optional)"}
-        aria-label="GitHub token settings"
-      >
-        {token ? "🔓" : "🔑"}
-      </button>
-      {open && (
-        <div className="token-panel">
-          <p className="tp-title">Optional GitHub token</p>
-          <p className="tp-note">
-            Unlocks a higher rate limit and real per-repo history from the last
-            year. Kept only in this browser tab and sent only to
-            api.github.com.
-          </p>
-          <input
-            type="password"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="ghp_…"
-            spellCheck={false}
-            autoCapitalize="none"
-            name="devpulse-token"
-            autoComplete="off"
-            data-1p-ignore
-            data-lpignore="true"
-            data-bwignore
-            data-form-type="other"
-          />
-          <div className="tp-actions">
-            <a
-              href="https://github.com/settings/tokens?type=beta"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Create token →
-            </a>
-            <span className="spacer" />
-            {token && (
-              <button
-                onClick={() => {
-                  setToken("");
-                  setOpen(false);
-                }}
-              >
-                Clear
-              </button>
-            )}
-            <button
-              className="primary"
-              onClick={() => {
-                setToken(draft.trim());
-                setOpen(false);
-              }}
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ShareButton({ login }: { login: string }) {
-  const [copied, setCopied] = useState(false);
-  async function copy() {
-    const url = `${window.location.origin}${window.location.pathname}?u=${login}`;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      /* clipboard blocked, ignore */
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
-  return (
-    <button className="share-btn" onClick={copy} title="Copy a link to this report">
-      {copied ? "✓ Copied" : "🔗 Share"}
-    </button>
-  );
-}
 
 export function App() {
   const [query, setQuery] = useState("");
@@ -881,71 +704,3 @@ function DayView({
   );
 }
 
-function GameCard({ report }: { report: Report }) {
-  const g = useMemo(() => deriveGamification(report), [report]);
-  const earned = g.badges.filter((b) => b.earned).length;
-  return (
-    <div className="game card">
-      <div className="game-level">
-        <div
-          className="gl-ring"
-          style={{ ["--pct" as string]: `${g.pctToNext}%` }}
-        >
-          <span className="gl-num">{g.level}</span>
-          <span className="gl-lvl">LVL</span>
-        </div>
-        <div className="gl-info">
-          <div className="gl-title">{g.title}</div>
-          <div className="gl-sub muted">
-            <CountUp value={g.score.toLocaleString()} /> activity points ·{" "}
-            {earned}/{g.badges.length} achievements
-          </div>
-          <div className="gl-bar" title={`${Math.round(g.pctToNext)}% to level ${g.level + 1}`}>
-            <div className="gl-fill" style={{ width: `${g.pctToNext}%` }} />
-          </div>
-          <div className="gl-next muted">
-            {(g.nextLevelAt - g.score).toLocaleString()} points to level{" "}
-            {g.level + 1}
-          </div>
-        </div>
-      </div>
-      <div className="game-badges">
-        {g.badges.map((b) => (
-          <div
-            className={`badge${b.earned ? " earned" : ""}`}
-            key={b.label}
-            title={b.desc}
-          >
-            <span className="badge-icon">{b.icon}</span>
-            <span className="badge-label">{b.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function StatTile({
-  className,
-  icon,
-  value,
-  label,
-  sub,
-}: {
-  className?: string;
-  icon: string;
-  value: string;
-  label: string;
-  sub?: string;
-}) {
-  return (
-    <div className={`stat ${className ?? ""}`}>
-      <span className="spark-icon">{icon}</span>
-      <div className="value">
-        <CountUp value={value} />
-      </div>
-      <div className="label">{label}</div>
-      {sub && <div className="sub">{sub}</div>}
-    </div>
-  );
-}
