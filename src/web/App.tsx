@@ -42,8 +42,10 @@ const EXAMPLES = ["torvalds", "gaearon", "chemaclass"];
 
 const SITE = "https://chemaclass.github.io/devpulse/";
 
-// Share toolkit: copy link, a challenge invite, and a README badge snippet.
+// One Share button that opens a small menu: copy link, challenge invite,
+// or a README badge snippet.
 function ShareTools({ login, persona }: { login: string; persona: TPersona }) {
+  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const reportUrl = `${window.location.origin}${window.location.pathname}?u=${login}`;
   const badge = `[![DevPulse](https://img.shields.io/badge/DevPulse-${encodeURIComponent(
@@ -53,34 +55,37 @@ function ShareTools({ login, persona }: { login: string; persona: TPersona }) {
   function copy(kind: string, text: string) {
     navigator.clipboard?.writeText(text).catch(() => {});
     setCopied(kind);
-    setTimeout(() => setCopied(null), 1500);
+    setTimeout(() => {
+      setCopied(null);
+      setOpen(false);
+    }, 1100);
   }
 
   return (
-    <div className="share-tools">
-      <button
-        className="share-btn"
-        title="Copy a link to this report"
-        onClick={() => copy("link", reportUrl)}
-      >
-        {copied === "link" ? "✓ Copied" : "🔗 Share"}
+    <div className="share-menu-wrap">
+      <button className="share-btn" onClick={() => setOpen((o) => !o)}>
+        🔗 Share ▾
       </button>
-      <button
-        className="share-btn"
-        title="Copy a challenge invite"
-        onClick={() =>
-          copy("challenge", `⚔️ Can you out-code @${login} on DevPulse? ${reportUrl}`)
-        }
-      >
-        {copied === "challenge" ? "✓ Copied" : "⚔️ Challenge"}
-      </button>
-      <button
-        className="share-btn"
-        title="Copy a README badge"
-        onClick={() => copy("readme", badge)}
-      >
-        {copied === "readme" ? "✓ Copied" : "📋 README"}
-      </button>
+      {open && (
+        <div className="share-menu">
+          <button onClick={() => copy("link", reportUrl)}>
+            {copied === "link" ? "✓ Copied" : "🔗 Copy link"}
+          </button>
+          <button
+            onClick={() =>
+              copy(
+                "challenge",
+                `⚔️ Can you out-code @${login} on DevPulse? ${reportUrl}`,
+              )
+            }
+          >
+            {copied === "challenge" ? "✓ Copied" : "⚔️ Copy challenge invite"}
+          </button>
+          <button onClick={() => copy("readme", badge)}>
+            {copied === "readme" ? "✓ Copied" : "📋 Copy README badge"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
