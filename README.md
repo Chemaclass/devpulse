@@ -16,7 +16,7 @@ A small Vite + React + TypeScript app (plus a matching Node CLI) that runs entir
 - **Compare two users**: a head-to-head with a scoreboard, fun facts, overlaid charts and side-by-side forests.
 - **Gamification**: an activity level and unlockable achievement badges.
 - **Top languages**, **light/dark themes**, and **shareable URLs** (`?u=`, `?d=`, `?mode=`, `?vs=`).
-- **Optional token**: paste a GitHub PAT (kept in your browser session) for higher rate limits and real per-repo history.
+- **Optional token**: paste a GitHub PAT (kept in your browser session) for higher rate limits and accurate last-year stats (contribution mix and top projects) via GraphQL.
 
 ## 🚀 Quick start
 

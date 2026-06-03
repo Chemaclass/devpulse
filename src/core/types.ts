@@ -82,11 +82,21 @@ export interface LanguageStat {
   stars: number;
 }
 
-/** Per-repository commit contributions over the last year (GraphQL, token). */
+/** Per-repository contributions over the last year (GraphQL, token). */
 export interface RepoYearStat {
   repo: string;
   repoUrl: string;
-  commits: number;
+  total: number;
+}
+
+/**
+ * Accurate last-year stats from the GraphQL contributionsCollection, available
+ * only with a token. Unlike the public events feed (capped at ~300 events),
+ * these cover a full year by type and per repository.
+ */
+export interface YearStats {
+  byType: Record<ContributionType, number>;
+  topRepos: RepoYearStat[];
 }
 
 export interface CalendarSummary {
@@ -113,10 +123,10 @@ export interface Report {
   /** Top primary languages across the user's public repos. */
   languages: LanguageStat[];
   /**
-   * Per-repo commit contributions over the last year. Only populated when the
-   * user supplies a personal access token (via the GraphQL API).
+   * Accurate last-year stats (by type + top repos) from GraphQL. Only
+   * populated when the user supplies a personal access token.
    */
-  yearRepos?: RepoYearStat[];
+  yearStats?: YearStats;
   /** The window covered by the detailed `events`. */
   window: { from: string; to: string; days: number };
   /** Non-fatal notes (e.g. rate limiting, truncated events). */

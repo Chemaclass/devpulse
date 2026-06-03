@@ -50,15 +50,19 @@ describe("buildReport", () => {
     expect(r.window).toEqual({ from: "2026-06-01", to: "2026-06-02", days: 2 });
   });
 
-  it("passes languages and yearRepos through", () => {
+  it("passes languages and yearStats through", () => {
     const r = buildReport({
       profile,
       calendar,
       events: [],
       languages: [{ language: "TypeScript", repos: 3, stars: 10 }],
-      yearRepos: [{ repo: "o/a", repoUrl: "", commits: 9 }],
+      yearStats: {
+        byType: { commit: 9, pullRequest: 2, issue: 1, review: 3, other: 0 },
+        topRepos: [{ repo: "o/a", repoUrl: "", total: 12 }],
+      },
     });
     expect(r.languages[0].language).toBe("TypeScript");
-    expect(r.yearRepos?.[0].commits).toBe(9);
+    expect(r.yearStats?.byType.commit).toBe(9);
+    expect(r.yearStats?.topRepos[0].total).toBe(12);
   });
 });

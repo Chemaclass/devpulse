@@ -8,7 +8,7 @@ import {
   Profile,
   Report,
   RepoStats,
-  RepoYearStat,
+  YearStats,
 } from "./types.js";
 
 function emptyTypeRecord(): Record<ContributionType, number> {
@@ -24,7 +24,7 @@ export function buildReport(args: {
   events: ActivityEvent[];
   notes?: string[];
   languages?: LanguageStat[];
-  yearRepos?: RepoYearStat[];
+  yearStats?: YearStats;
 }): Report {
   const { profile, calendar, events } = args;
   const notes = [...(args.notes ?? [])];
@@ -101,7 +101,7 @@ export function buildReport(args: {
     byRepo,
     byType,
     languages,
-    yearRepos: args.yearRepos,
+    yearStats: args.yearStats,
     window: { from, to, days },
     notes,
   };

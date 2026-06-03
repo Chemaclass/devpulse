@@ -1,7 +1,7 @@
 import { buildReport } from "./aggregate.js";
 import { readReport, writeReport } from "./cache.js";
 import { fetchCalendar } from "./contributions.js";
-import { fetchYearRepoContributions } from "./graphql.js";
+import { fetchYearStats } from "./graphql.js";
 import {
   fetchProfile,
   fetchPublicEvents,
@@ -12,7 +12,7 @@ import { Report } from "./types.js";
 export * from "./types.js";
 export { buildReport } from "./aggregate.js";
 export { fetchCalendar, summarizeCalendar } from "./contributions.js";
-export { fetchYearRepoContributions } from "./graphql.js";
+export { fetchYearStats } from "./graphql.js";
 export {
   fetchProfile,
   fetchPublicEvents,
@@ -59,12 +59,10 @@ export async function getReport(
     fetchTopLanguages(clean, ghFetch),
   ]);
 
-  // With a token, enrich with real per-repo commit history for the last year.
+  // With a token, enrich with accurate last-year stats (by type + top repos).
   // Non-fatal: any failure falls back to the public report.
-  const yearRepos = authToken
-    ? await fetchYearRepoContributions(clean, authToken, fetchImpl).catch(
-        () => undefined,
-      )
+  const yearStats = authToken
+    ? await fetchYearStats(clean, authToken, fetchImpl).catch(() => undefined)
     : undefined;
 
   const report = buildReport({
@@ -73,7 +71,7 @@ export async function getReport(
     events: eventsResult.events,
     notes: eventsResult.notes,
     languages,
-    yearRepos,
+    yearStats,
   });
   writeReport(cacheKey, report, now);
   return report;

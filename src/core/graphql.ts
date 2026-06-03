@@ -1,14 +1,27 @@
-import { GitHubError, RepoYearStat } from "./types.js";
+import { ContributionType, GitHubError, YearStats } from "./types.js";
 
 // GitHub GraphQL endpoint. The personal access token is ONLY ever sent here
 // (api.github.com) — never to the public calendar proxy or anywhere else.
 const GRAPHQL = "https://api.github.com/graphql";
 
-const REPO_CONTRIB_QUERY = `
+const YEAR_STATS_QUERY = `
 query($login: String!) {
   user(login: $login) {
     contributionsCollection {
-      commitContributionsByRepository(maxRepositories: 25) {
+      totalCommitContributions
+      totalPullRequestContributions
+      totalIssueContributions
+      totalPullRequestReviewContributions
+      totalRepositoryContributions
+      commitContributionsByRepository(maxRepositories: 50) {
+        repository { nameWithOwner url }
+        contributions { totalCount }
+      }
+      pullRequestContributionsByRepository(maxRepositories: 50) {
+        repository { nameWithOwner url }
+        contributions { totalCount }
+      }
+      issueContributionsByRepository(maxRepositories: 50) {
         repository { nameWithOwner url }
         contributions { totalCount }
       }
@@ -16,21 +29,32 @@ query($login: String!) {
   }
 }`;
 
-interface RawRepoContribution {
+interface RepoContribution {
   repository: { nameWithOwner: string; url: string };
   contributions: { totalCount: number };
 }
 
+interface ContributionsCollection {
+  totalCommitContributions: number;
+  totalPullRequestContributions: number;
+  totalIssueContributions: number;
+  totalPullRequestReviewContributions: number;
+  totalRepositoryContributions: number;
+  commitContributionsByRepository: RepoContribution[];
+  pullRequestContributionsByRepository: RepoContribution[];
+  issueContributionsByRepository: RepoContribution[];
+}
+
 /**
- * Per-repository commit contributions over the last year, via the GraphQL API.
- * Requires a token. This reaches far beyond the ~90-day public events window,
- * delivering real per-project history (the roadmap "multi-year" promise).
+ * Accurate last-year stats via the GraphQL API. Requires a token. Reaches far
+ * beyond the ~90-day public events window: real per-type totals and per-repo
+ * contributions for the whole year.
  */
-export async function fetchYearRepoContributions(
+export async function fetchYearStats(
   username: string,
   token: string,
   fetchImpl: typeof fetch = fetch,
-): Promise<RepoYearStat[]> {
+): Promise<YearStats> {
   let res: Response;
   try {
     res = await fetchImpl(GRAPHQL, {
@@ -40,7 +64,7 @@ export async function fetchYearRepoContributions(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        query: REPO_CONTRIB_QUERY,
+        query: YEAR_STATS_QUERY,
         variables: { login: username },
       }),
     });
@@ -60,23 +84,36 @@ export async function fetchYearRepoContributions(
   }
 
   const json = (await res.json()) as {
-    data?: {
-      user?: {
-        contributionsCollection?: {
-          commitContributionsByRepository?: RawRepoContribution[];
-        };
-      };
-    };
+    data?: { user?: { contributionsCollection?: ContributionsCollection } };
+  };
+  const cc = json.data?.user?.contributionsCollection;
+  if (!cc) throw new GitHubError("No contributions data returned.");
+
+  const byType: Record<ContributionType, number> = {
+    commit: cc.totalCommitContributions,
+    pullRequest: cc.totalPullRequestContributions,
+    issue: cc.totalIssueContributions,
+    review: cc.totalPullRequestReviewContributions,
+    other: cc.totalRepositoryContributions,
   };
 
-  const raw =
-    json.data?.user?.contributionsCollection?.commitContributionsByRepository ??
-    [];
-  return raw
-    .map((r) => ({
-      repo: r.repository.nameWithOwner,
-      repoUrl: r.repository.url,
-      commits: r.contributions.totalCount,
-    }))
-    .sort((a, b) => b.commits - a.commits);
+  // Merge per-repo contributions across commits, PRs and issues.
+  const repos = new Map<string, { url: string; total: number }>();
+  const add = (list: RepoContribution[] | undefined) => {
+    for (const r of list ?? []) {
+      const key = r.repository.nameWithOwner;
+      const entry = repos.get(key) ?? { url: r.repository.url, total: 0 };
+      entry.total += r.contributions.totalCount;
+      repos.set(key, entry);
+    }
+  };
+  add(cc.commitContributionsByRepository);
+  add(cc.pullRequestContributionsByRepository);
+  add(cc.issueContributionsByRepository);
+
+  const topRepos = [...repos.entries()]
+    .map(([repo, v]) => ({ repo, repoUrl: v.url, total: v.total }))
+    .sort((a, b) => b.total - a.total);
+
+  return { byType, topRepos };
 }

@@ -564,6 +564,17 @@ function OverallView({
     .slice(0, 8)
     .map((l) => ({ name: l.language, value: l.repos }));
 
+  // With a token, the GraphQL year stats are far more representative than the
+  // ~90-day public events feed, so prefer them for mix + top projects.
+  const yearStats = report.yearStats;
+  const mixByType = yearStats?.byType ?? byType;
+  const mixSuffix = yearStats ? " · last year" : "";
+  const projectBars: BarDatum[] = yearStats
+    ? yearStats.topRepos
+        .slice(0, 10)
+        .map((r) => ({ name: r.repo, value: r.total, href: r.repoUrl }))
+    : repoBars;
+
   const persona = useMemo(() => derivePersona(report), [report]);
   const [view, setView] = useState<"3d" | "grid">("3d");
 
@@ -653,18 +664,18 @@ function OverallView({
           </div>
         </div>
         <div className="card col-4">
-          <h3>Contribution mix</h3>
+          <h3>Contribution mix{mixSuffix}</h3>
           <div style={{ height: 280 }}>
-            <TypeDoughnut byType={byType} />
+            <TypeDoughnut byType={mixByType} />
           </div>
         </div>
 
         <div className="card col-6">
-          <h3>Top projects (recent)</h3>
-          {repoBars.length ? (
-            <Bars data={repoBars} />
+          <h3>Top projects{mixSuffix || " (recent)"}</h3>
+          {projectBars.length ? (
+            <Bars data={projectBars} />
           ) : (
-            <p className="muted">No recent project activity.</p>
+            <p className="muted">No project activity.</p>
           )}
         </div>
         <div className="card col-6">
@@ -679,7 +690,7 @@ function OverallView({
         <div className="card col-4">
           <h3>Contribution personality</h3>
           <div style={{ height: 260 }}>
-            <TypeRadar byType={byType} />
+            <TypeRadar byType={mixByType} />
           </div>
         </div>
         <div className="card col-4">
@@ -698,19 +709,6 @@ function OverallView({
             )}
           </div>
         </div>
-
-        {report.yearRepos && report.yearRepos.length > 0 && (
-          <div className="card col-12">
-            <h3>Top repositories · last year (commits, via token)</h3>
-            <Bars
-              data={report.yearRepos.slice(0, 12).map((r) => ({
-                name: r.repo,
-                value: r.commits,
-                href: r.repoUrl,
-              }))}
-            />
-          </div>
-        )}
 
         <div className="card col-12">
           <h3>Latest events</h3>

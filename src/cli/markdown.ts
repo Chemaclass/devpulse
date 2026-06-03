@@ -96,15 +96,22 @@ export function toMarkdown(report: Report): string {
     lines.push("");
   }
 
-  if (report.yearRepos && report.yearRepos.length) {
-    lines.push(`### Top repositories last year (commits)`);
+  if (report.yearStats) {
+    const ys = report.yearStats;
+    lines.push(`### Last year (via token)`);
     lines.push("");
-    lines.push(`| Repository | Commits |`);
-    lines.push(`| --- | ---: |`);
-    for (const r of report.yearRepos.slice(0, 15)) {
-      lines.push(`| [${r.repo}](${r.repoUrl}) | ${r.commits} |`);
+    lines.push(
+      `Commits ${ys.byType.commit} · PRs ${ys.byType.pullRequest} · Issues ${ys.byType.issue} · Reviews ${ys.byType.review}`,
+    );
+    lines.push("");
+    if (ys.topRepos.length) {
+      lines.push(`| Top repository (last year) | Contributions |`);
+      lines.push(`| --- | ---: |`);
+      for (const r of ys.topRepos.slice(0, 15)) {
+        lines.push(`| [${r.repo}](${r.repoUrl}) | ${r.total} |`);
+      }
+      lines.push("");
     }
-    lines.push("");
   }
 
   if (report.languages.length) {
