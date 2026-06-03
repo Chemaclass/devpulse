@@ -480,6 +480,7 @@ a:hover {
   align-items: center;
   gap: 18px;
   position: relative;
+  flex-wrap: wrap;
 }
 .persona-emoji {
   font-size: 52px;
