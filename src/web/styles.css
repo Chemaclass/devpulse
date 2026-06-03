@@ -293,6 +293,13 @@ a:hover {
   color: var(--on-accent);
 }
 
+/* ---------- Share tools ---------- */
+.share-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* ---------- Share button ---------- */
 .share-btn {
   border: 1px solid var(--panel-border);

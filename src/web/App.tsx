@@ -5,6 +5,7 @@ import {
   getReport,
   GitHubError,
   parseUsername,
+  Persona as TPersona,
   Report,
 } from "../core/index.js";
 import { Landing, Skeleton } from "./components/AppStates.js";
@@ -19,7 +20,6 @@ import {
 import { Feed } from "./components/Feed.js";
 import { GameCard } from "./components/GameCard.js";
 import {
-  ShareButton,
   ThemeToggle,
   TokenControl,
 } from "./components/HeaderControls.js";
@@ -39,6 +39,51 @@ const Compare = lazy(() =>
 
 type Mode = "overall" | "latest" | "date";
 const EXAMPLES = ["torvalds", "gaearon", "chemaclass"];
+
+const SITE = "https://chemaclass.github.io/devpulse/";
+
+// Share toolkit: copy link, a challenge invite, and a README badge snippet.
+function ShareTools({ login, persona }: { login: string; persona: TPersona }) {
+  const [copied, setCopied] = useState<string | null>(null);
+  const reportUrl = `${window.location.origin}${window.location.pathname}?u=${login}`;
+  const badge = `[![DevPulse](https://img.shields.io/badge/DevPulse-${encodeURIComponent(
+    persona.title,
+  )}-2f7d44?logo=github)](${SITE}?u=${login})`;
+
+  function copy(kind: string, text: string) {
+    navigator.clipboard?.writeText(text).catch(() => {});
+    setCopied(kind);
+    setTimeout(() => setCopied(null), 1500);
+  }
+
+  return (
+    <div className="share-tools">
+      <button
+        className="share-btn"
+        title="Copy a link to this report"
+        onClick={() => copy("link", reportUrl)}
+      >
+        {copied === "link" ? "✓ Copied" : "🔗 Share"}
+      </button>
+      <button
+        className="share-btn"
+        title="Copy a challenge invite"
+        onClick={() =>
+          copy("challenge", `⚔️ Can you out-code @${login} on DevPulse? ${reportUrl}`)
+        }
+      >
+        {copied === "challenge" ? "✓ Copied" : "⚔️ Challenge"}
+      </button>
+      <button
+        className="share-btn"
+        title="Copy a README badge"
+        onClick={() => copy("readme", badge)}
+      >
+        {copied === "readme" ? "✓ Copied" : "📋 README"}
+      </button>
+    </div>
+  );
+}
 
 export function App() {
   const [query, setQuery] = useState("");
@@ -368,6 +413,7 @@ function Dashboard({
   vsError: string | null;
 }) {
   const { profile, calendar } = report;
+  const persona = useMemo(() => derivePersona(report), [report]);
 
   // Reflect the viewed profile in the tab title so shared links read well.
   useEffect(() => {
@@ -425,7 +471,7 @@ function Dashboard({
           </div>
         </div>
         <div className="spacer" />
-        <ShareButton login={profile.login} />
+        <ShareTools login={profile.login} persona={persona} />
         <div className="modes">
           <button
             className={mode === "overall" ? "active" : ""}
