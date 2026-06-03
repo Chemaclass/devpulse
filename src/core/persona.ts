@@ -48,6 +48,10 @@ const MONTH_NAMES = [
   "December",
 ];
 
+// The events feed must span at least this many distinct days for its peak
+// hour to be a meaningful chronotype rather than a single burst.
+const MIN_DISTINCT_DAYS = 5;
+
 function chronotype(hour: number): { emoji: string; label: string } {
   if (hour >= 0 && hour < 5) return { emoji: "🦉", label: "Night Owl" };
   if (hour >= 5 && hour < 9) return { emoji: "🐓", label: "Early Bird" };
@@ -191,8 +195,13 @@ export function derivePersona(report: Report): Persona {
 
   const traits: PersonaTrait[] = [];
 
-  // Peak hour: only the events feed carries timestamps.
-  const peakHour = peakHourFromEvents(events);
+  // Peak hour: only the events feed carries timestamps, and it's capped at
+  // ~300 recent events. If those cluster in a day or two (common for very
+  // active users) the "peak" is just that burst, not a rhythm, so require the
+  // events to span enough distinct days before showing a chronotype.
+  const distinctDays = new Set(events.map((e) => e.date)).size;
+  const peakHour =
+    distinctDays >= MIN_DISTINCT_DAYS ? peakHourFromEvents(events) : null;
   if (peakHour != null) {
     const chrono = chronotype(peakHour);
     traits.push({
