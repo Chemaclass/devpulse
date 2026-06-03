@@ -682,7 +682,10 @@ a:hover {
   z-index: 2;
 }
 .heatmap .cell.l0 { background: rgba(150, 165, 120, 0.08); }
-:root[data-theme="light"] .heatmap .cell,
+/* Light theme: only restyle the *empty* cell. Scoping to .l0 keeps this from
+   out-specifying the l1–l4 level colors below, which it did when it also
+   matched bare .cell — that wiped every level to the faint empty tone and
+   left only the l3/l4 box-shadow glow showing (washed-out, blurry grid). */
 :root[data-theme="light"] .heatmap .cell.l0 {
   background: rgba(70, 90, 50, 0.1);
 }
