@@ -171,15 +171,11 @@ export default {
       .on('meta[name="twitter:title"]', setContent(title))
       .on('meta[name="twitter:description"]', setContent(description))
       .on('meta[name="twitter:card"]', setContent("summary_large_image"))
+      .on('meta[property="og:image"]', setContent(image))
+      .on('meta[property="og:image:alt"]', setContent(`${login} on DevPulse`))
+      .on('meta[name="twitter:image"]', setContent(image))
       .on('link[rel="canonical"]', {
         element: (e) => e.setAttribute("href", canonical),
-      })
-      .on("head", {
-        element: (e) =>
-          e.append(
-            `<meta property="og:image" content="${image}" /><meta name="twitter:image" content="${image}" />`,
-            { html: true },
-          ),
       })
       .transform(upstream);
   },
