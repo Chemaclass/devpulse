@@ -18,6 +18,7 @@ import {
   ContributionType,
   DayStats,
 } from "../../core/types.js";
+import { useTheme } from "../theme.js";
 
 ChartJS.register(
   ArcElement,
@@ -48,8 +49,21 @@ const TYPE_LABELS: Record<ContributionType, string> = {
   other: "Other",
 };
 
-const tickColor = "#9aa489";
-const gridColor = "rgba(150,165,120,0.1)";
+// Chart text/grid colors follow the active theme (and re-render on toggle).
+function useChartColors() {
+  const { theme } = useTheme();
+  return theme === "dark"
+    ? {
+        tickColor: "#9aa489",
+        gridColor: "rgba(150,165,120,0.12)",
+        sliceBorder: "rgba(15,19,16,0.6)",
+      }
+    : {
+        tickColor: "#5f6b50",
+        gridColor: "rgba(70,90,50,0.14)",
+        sliceBorder: "rgba(255,255,255,0.75)",
+      };
+}
 
 const CALENDAR_COLOR = "rgba(150,165,120,0.35)";
 const DEFAULT_DAYS = 30;
@@ -70,6 +84,7 @@ export function DailyChart({
   days: CalendarDay[];
   lookback?: number;
 }) {
+  const { tickColor, gridColor } = useChartColors();
   const today = new Date().toISOString().slice(0, 10);
   const window = days
     .filter((d) => d.date <= today)
@@ -147,6 +162,7 @@ export function TypeDoughnut({
 }: {
   byType: Record<ContributionType, number>;
 }) {
+  const { tickColor, sliceBorder } = useChartColors();
   const entries = CONTRIBUTION_TYPES.filter((t) => byType[t] > 0);
   const data = {
     labels: entries.map((t) => TYPE_LABELS[t]),
@@ -154,7 +170,7 @@ export function TypeDoughnut({
       {
         data: entries.map((t) => byType[t]),
         backgroundColor: entries.map((t) => TYPE_COLORS[t]),
-        borderColor: "rgba(5,6,12,0.6)",
+        borderColor: sliceBorder,
         borderWidth: 2,
         hoverOffset: 8,
       },
@@ -180,6 +196,7 @@ export function YearBars({
 }: {
   totalByYear: Record<string, number>;
 }) {
+  const { tickColor, gridColor } = useChartColors();
   const years = Object.keys(totalByYear).sort();
   const data = {
     labels: years,
@@ -213,6 +230,7 @@ export function TypeRadar({
 }: {
   byType: Record<ContributionType, number>;
 }) {
+  const { tickColor, gridColor } = useChartColors();
   const data = {
     labels: CONTRIBUTION_TYPES.map((t) => TYPE_LABELS[t]),
     datasets: [
@@ -256,6 +274,7 @@ const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
  * feed, with weekends tinted amber.
  */
 export function WeekdayBars({ days }: { days: CalendarDay[] }) {
+  const { tickColor, gridColor } = useChartColors();
   const buckets = new Array(7).fill(0);
   for (const d of days) {
     if (d.count <= 0) continue;
@@ -299,6 +318,7 @@ interface RadarSeries {
 }
 
 export function TypeRadarCompare({ a, b }: { a: RadarSeries; b: RadarSeries }) {
+  const { tickColor, gridColor } = useChartColors();
   const series = [a, b];
   const data = {
     labels: CONTRIBUTION_TYPES.map((t) => TYPE_LABELS[t]),
@@ -338,6 +358,7 @@ interface YearSeries {
 }
 
 export function YearBarsCompare({ a, b }: { a: YearSeries; b: YearSeries }) {
+  const { tickColor, gridColor } = useChartColors();
   const years = Array.from(
     new Set([...Object.keys(a.totalByYear), ...Object.keys(b.totalByYear)]),
   ).sort();

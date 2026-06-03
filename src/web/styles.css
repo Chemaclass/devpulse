@@ -670,6 +670,10 @@ a:hover {
   z-index: 2;
 }
 .heatmap .cell.l0 { background: rgba(150, 165, 120, 0.08); }
+:root[data-theme="light"] .heatmap .cell,
+:root[data-theme="light"] .heatmap .cell.l0 {
+  background: rgba(70, 90, 50, 0.1);
+}
 .heatmap .cell.l1 { background: #2f5138; }
 .heatmap .cell.l2 { background: #46824f; }
 .heatmap .cell.l3 { background: #6fae5f; box-shadow: 0 0 6px rgba(116, 176, 106,0.45); }
