@@ -65,11 +65,18 @@ export async function getReport(
     ? await fetchYearStats(clean, authToken, fetchImpl).catch(() => undefined)
     : undefined;
 
+  const notes = [...eventsResult.notes];
+  if (authToken && !yearStats) {
+    notes.push(
+      "A token was provided but the GraphQL year stats could not be loaded. Check the token is valid and can read contributions.",
+    );
+  }
+
   const report = buildReport({
     profile,
     calendar,
     events: eventsResult.events,
-    notes: eventsResult.notes,
+    notes,
     languages,
     yearStats,
   });

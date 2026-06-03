@@ -195,6 +195,16 @@ export function App() {
     document.title = "DevPulse ⚡ GitHub work, visualized";
   }
 
+  // Re-fetch the current report when the token changes, so saving a token
+  // immediately upgrades the data (year stats) without a manual re-run.
+  const tokenRef = useRef(token);
+  useEffect(() => {
+    if (tokenRef.current === token) return;
+    tokenRef.current = token;
+    if (report) run(report.profile.login);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
   // Deep-link support: load ?u=<name> with an optional view (?mode=latest or
   // ?d=<date>) and optional ?vs=<name> on first paint and on back/forward.
   useEffect(() => {
