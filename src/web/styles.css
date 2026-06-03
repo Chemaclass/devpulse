@@ -220,7 +220,6 @@ a:hover {
 .theme-toggle:hover,
 .token-btn:hover {
   border-color: var(--cyan);
-  transform: translateY(-1px);
 }
 .token-control {
   position: relative;
@@ -308,7 +307,6 @@ a:hover {
 }
 .share-btn:hover {
   border-color: var(--cyan);
-  transform: translateY(-1px);
 }
 
 /* ---------- Mode toggle ---------- */
@@ -456,8 +454,8 @@ a:hover {
   animation: persona-float 3.5s ease-in-out infinite;
 }
 @keyframes persona-float {
-  0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50% { transform: translateY(-6px) rotate(3deg); }
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
 }
 .persona-kicker {
   color: var(--muted);
@@ -988,8 +986,8 @@ a.chip-link:hover {
 }
 
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ---------- Gamification card ---------- */
@@ -1082,7 +1080,7 @@ a.chip-link:hover {
   font-weight: 600;
   opacity: 0.4;
   filter: grayscale(1);
-  transition: transform 0.12s ease;
+  transition: border-color 0.15s ease;
 }
 .badge.earned {
   opacity: 1;
@@ -1090,7 +1088,7 @@ a.chip-link:hover {
   border-color: color-mix(in srgb, var(--cyan) 45%, transparent);
   background: color-mix(in srgb, var(--cyan) 12%, transparent);
 }
-.badge.earned:hover { transform: translateY(-2px); }
+.badge.earned:hover { border-color: var(--cyan); }
 .badge-icon { font-size: 15px; }
 
 /* ---------- Compare ---------- */
@@ -1172,7 +1170,6 @@ a.chip-link:hover {
 }
 .sb-card.sb-leader {
   border-width: 2px;
-  transform: translateY(-4px);
 }
 .sb-crown {
   position: absolute;
