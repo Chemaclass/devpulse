@@ -318,6 +318,13 @@ function CompareBar({
         placeholder="another username"
         spellCheck={false}
         autoCapitalize="none"
+        type="search"
+        name="devpulse-compare"
+        autoComplete="off"
+        data-1p-ignore
+        data-lpignore="true"
+        data-bwignore
+        data-form-type="other"
       />
       <button type="submit" disabled={loading || !value.trim()}>
         {loading ? "Loading…" : "Compare"}
