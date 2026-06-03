@@ -40,10 +40,12 @@ export async function getReport(
     );
   }
 
-  // Key by user + whether a token was used (authed reports carry more data).
-  // The token value itself is never part of the key.
+  // Key by user + a token fingerprint, so switching/clearing/fixing a token
+  // never serves a stale report. The raw token is never part of the key.
   const authToken = token?.trim() || undefined;
-  const cacheKey = `${clean.toLowerCase()}|${authToken ? "auth" : "anon"}`;
+  const cacheKey = `${clean.toLowerCase()}|${
+    authToken ? "t" + fingerprint(authToken) : "anon"
+  }`;
   const now = Date.now();
   const cached = readReport(cacheKey, now);
   if (cached) return cached;
@@ -82,6 +84,19 @@ export async function getReport(
   });
   writeReport(cacheKey, report, now);
   return report;
+}
+
+/**
+ * Short non-reversible fingerprint of a token, used only to discriminate the
+ * cache (so different tokens don't share an entry). The raw token is never
+ * stored or logged.
+ */
+function fingerprint(token: string): string {
+  let h = 5381;
+  for (let i = 0; i < token.length; i++) {
+    h = ((h << 5) + h + token.charCodeAt(i)) >>> 0;
+  }
+  return h.toString(36);
 }
 
 /**
