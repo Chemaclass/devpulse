@@ -1145,11 +1145,33 @@ a.chip-link:hover {
 .dash-toolbar .share-menu-wrap {
   margin-left: auto;
 }
+@media (max-width: 720px) {
+  .dash-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dash-toolbar .modes {
+    flex-wrap: wrap;
+  }
+  .dash-toolbar .compare-bar {
+    min-width: 0;
+  }
+  .dash-toolbar .compare-bar input {
+    min-width: 0;
+  }
+  .dash-toolbar .share-menu-wrap {
+    margin-left: 0;
+  }
+  .dash-toolbar .share-menu-wrap .share-btn {
+    width: 100%;
+  }
+}
 
 .compare-bar {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .compare-bar .cb-label {
   font-weight: 600;
