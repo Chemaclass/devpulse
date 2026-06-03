@@ -16,7 +16,6 @@ import {
   TypeRadar,
   YearBars,
 } from "./components/Charts.js";
-import { downloadStatCard } from "./lib/shareCard.js";
 import { Feed } from "./components/Feed.js";
 import { GameCard } from "./components/GameCard.js";
 import {
@@ -379,8 +378,6 @@ function Dashboard({
     };
   }, [profile]);
 
-  const persona = useMemo(() => derivePersona(report), [report]);
-
   // Resolve the active day for "latest" / "date" modes.
   const latestActive = useMemo(() => {
     if (report.byDay.length) return report.byDay[0].date;
@@ -428,13 +425,6 @@ function Dashboard({
           </div>
         </div>
         <div className="spacer" />
-        <button
-          className="share-btn"
-          onClick={() => downloadStatCard(report, persona)}
-          title="Download a shareable stat card"
-        >
-          🖼️ Card
-        </button>
         <ShareButton login={profile.login} />
         <div className="modes">
           <button
