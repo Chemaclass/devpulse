@@ -3,6 +3,7 @@ import {
   BarElement,
   CategoryScale,
   Chart as ChartJS,
+  ChartOptions,
   Filler,
   Legend,
   LinearScale,
@@ -12,6 +13,8 @@ import {
   Tooltip,
 } from "chart.js";
 import { Bar, Doughnut, Radar } from "react-chartjs-2";
+import { weekdayBuckets } from "../../core/contributions.js";
+import { todayISO } from "../../core/dates.js";
 import {
   TCalendarDay,
   CONTRIBUTION_TYPES,
@@ -65,6 +68,32 @@ function useChartColors() {
       };
 }
 
+// Shared x/y scale styling for the simple (non-stacked) bar charts.
+function barScales(
+  tickColor: string,
+  gridColor: string,
+): ChartOptions<"bar">["scales"] {
+  return {
+    x: { ticks: { color: tickColor }, grid: { display: false } },
+    y: { ticks: { color: tickColor, precision: 0 }, grid: { color: gridColor } },
+  };
+}
+
+// Shared radial scale styling for the personality radars.
+function radarScales(
+  tickColor: string,
+  gridColor: string,
+): ChartOptions<"radar">["scales"] {
+  return {
+    r: {
+      angleLines: { color: gridColor },
+      grid: { color: gridColor },
+      pointLabels: { color: tickColor, font: { size: 12 } },
+      ticks: { display: false, precision: 0 },
+    },
+  };
+}
+
 const CALENDAR_COLOR = "rgba(150,165,120,0.35)";
 const DEFAULT_DAYS = 30;
 
@@ -85,7 +114,7 @@ export function DailyChart({
   lookback?: number;
 }) {
   const { tickColor, gridColor } = useChartColors();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const window = days
     .filter((d) => d.date <= today)
     .slice(-lookback);
@@ -216,10 +245,7 @@ export function YearBars({
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: tickColor }, grid: { display: false } },
-          y: { ticks: { color: tickColor, precision: 0 }, grid: { color: gridColor } },
-        },
+        scales: barScales(tickColor, gridColor),
       }}
     />
   );
@@ -251,14 +277,7 @@ export function TypeRadar({
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: {
-          r: {
-            angleLines: { color: gridColor },
-            grid: { color: gridColor },
-            pointLabels: { color: tickColor, font: { size: 12 } },
-            ticks: { display: false, precision: 0 },
-          },
-        },
+        scales: radarScales(tickColor, gridColor),
       }}
     />
   );
@@ -275,12 +294,7 @@ const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
  */
 export function WeekdayBars({ days }: { days: TCalendarDay[] }) {
   const { tickColor, gridColor } = useChartColors();
-  const buckets = new Array(7).fill(0);
-  for (const d of days) {
-    if (d.count <= 0) continue;
-    const w = new Date(d.date + "T00:00:00Z").getUTCDay();
-    if (!Number.isNaN(w)) buckets[w] += d.count;
-  }
+  const buckets = weekdayBuckets(days);
   const data = {
     labels: WEEK_ORDER.map((i) => WEEKDAY_SHORT[i]),
     datasets: [
@@ -301,10 +315,7 @@ export function WeekdayBars({ days }: { days: TCalendarDay[] }) {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: tickColor }, grid: { display: false } },
-          y: { ticks: { color: tickColor, precision: 0 }, grid: { color: gridColor } },
-        },
+        scales: barScales(tickColor, gridColor),
       }}
     />
   );
@@ -338,14 +349,7 @@ export function TypeRadarCompare({ a, b }: { a: TRadarSeries; b: TRadarSeries })
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { labels: { color: tickColor, boxWidth: 12 } } },
-        scales: {
-          r: {
-            angleLines: { color: gridColor },
-            grid: { color: gridColor },
-            pointLabels: { color: tickColor, font: { size: 12 } },
-            ticks: { display: false, precision: 0 },
-          },
-        },
+        scales: radarScales(tickColor, gridColor),
       }}
     />
   );
@@ -378,10 +382,7 @@ export function YearBarsCompare({ a, b }: { a: TYearSeries; b: TYearSeries }) {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { labels: { color: tickColor, boxWidth: 12 } } },
-        scales: {
-          x: { ticks: { color: tickColor }, grid: { display: false } },
-          y: { ticks: { color: tickColor, precision: 0 }, grid: { color: gridColor } },
-        },
+        scales: barScales(tickColor, gridColor),
       }}
     />
   );

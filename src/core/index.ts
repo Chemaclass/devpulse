@@ -10,18 +10,10 @@ import {
 import { TReport } from "./types.js";
 
 export * from "./types.js";
-export { buildReport } from "./aggregate.js";
-export { fetchCalendar, summarizeCalendar } from "./contributions.js";
-export { fetchYearStats } from "./graphql.js";
-export {
-  fetchProfile,
-  fetchPublicEvents,
-  fetchTopLanguages,
-} from "./github.js";
+export { emptyTypeRecord } from "./aggregate.js";
+export { todayISO, parseUTCDate } from "./dates.js";
 export { derivePersona } from "./persona.js";
-export type { TPersona, TPersonaTrait } from "./persona.js";
-
-export { clearReportCache } from "./cache.js";
+export type { TPersona } from "./persona.js";
 
 /**
  * One-shot: fetch every public source for a username and assemble a TReport.

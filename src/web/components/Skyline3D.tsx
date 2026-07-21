@@ -2,6 +2,7 @@ import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useMemo, useState } from "react";
 import * as THREE from "three";
+import { parseUTCDate, todayISO } from "../../core/dates.js";
 import { TCalendarDay } from "../../core/types.js";
 import { useTheme } from "../theme.js";
 
@@ -32,10 +33,10 @@ type TTree = {
 }
 
 function buildTrees(days: TCalendarDay[], window: number): TTree[] {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const recent = days.filter((d) => d.date <= today).slice(-window);
   if (!recent.length) return [];
-  const firstDow = new Date(recent[0].date + "T00:00:00Z").getUTCDay();
+  const firstDow = parseUTCDate(recent[0].date).getUTCDay();
   return recent.map((d, i) => {
     const idx = i + firstDow;
     return {
@@ -220,7 +221,7 @@ export function Skyline3D({
           <strong>{hover.count}</strong> contribution
           {hover.count === 1 ? "" : "s"}
           <span>
-            {new Date(hover.date + "T00:00:00Z").toLocaleDateString(undefined, {
+            {parseUTCDate(hover.date).toLocaleDateString(undefined, {
               weekday: "short",
               year: "numeric",
               month: "short",

@@ -1,3 +1,4 @@
+import { parseUTCDate, todayISO } from "./dates.js";
 import { TCalendarDay, TCalendarSummary, GitHubError } from "./types.js";
 
 // Public, CORS-enabled proxy that exposes the GitHub contribution calendar
@@ -24,7 +25,7 @@ export async function fetchCalendar(
     res = await fetchImpl(url, { headers: { Accept: "application/json" } });
   } catch (err) {
     throw new GitHubError(
-      `Could not reach the contributions service: ${(err as Error).message}`,
+      `Could not reach the contributions service: ${err instanceof Error ? err.message : String(err)}`,
       undefined,
       "network",
     );
@@ -75,14 +76,24 @@ export function summarizeCalendar(
   };
 }
 
-/** Today's date (UTC) as YYYY-MM-DD. */
-function todayUTC(): string {
-  return new Date().toISOString().slice(0, 10);
+/**
+ * Contributions bucketed by weekday (0 = Sunday … 6 = Saturday), count-weighted.
+ * Empty and unparseable days are skipped. Shared by the persona derivation and
+ * the "weekly rhythm" chart.
+ */
+export function weekdayBuckets(days: TCalendarDay[]): number[] {
+  const buckets = new Array(7).fill(0);
+  for (const d of days) {
+    if (d.count <= 0) continue;
+    const dow = parseUTCDate(d.date).getUTCDay();
+    if (!Number.isNaN(dow)) buckets[dow] += d.count;
+  }
+  return buckets;
 }
 
 export function computeStreaks(
   days: TCalendarDay[],
-  today: string = todayUTC(),
+  today: string = todayISO(),
 ): {
   current: number;
   longest: number;

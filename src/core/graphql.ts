@@ -70,7 +70,7 @@ export async function fetchYearStats(
     });
   } catch (err) {
     throw new GitHubError(
-      `Network error reaching GitHub GraphQL: ${(err as Error).message}`,
+      `Network error reaching GitHub GraphQL: ${err instanceof Error ? err.message : String(err)}`,
       undefined,
       "network",
     );
