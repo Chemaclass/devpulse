@@ -2,11 +2,11 @@
 // Lets us track a clean "profile viewed" event with the username as a
 // property instead of relying on Cronitor parsing the ?u= query string.
 
-type CronitorFn = (command: string, ...args: unknown[]) => void;
+type TCronitorFn = (command: string, ...args: unknown[]) => void;
 
 declare global {
   interface Window {
-    cronitor?: CronitorFn;
+    cronitor?: TCronitorFn;
   }
 }
 

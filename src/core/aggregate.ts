@@ -2,7 +2,6 @@ import {
   TActivityEvent,
   TCalendarSummary,
   TContributionType,
-  CONTRIBUTION_TYPES,
   TDayStats,
   TLanguageStat,
   TProfile,
@@ -13,7 +12,7 @@ import {
 
 const MS_PER_DAY = 86_400_000;
 
-function emptyTypeRecord(): Record<TContributionType, number> {
+export function emptyTypeRecord(): Record<TContributionType, number> {
   return { commit: 0, pullRequest: 0, issue: 0, review: 0, other: 0 };
 }
 
@@ -108,5 +107,3 @@ export function buildReport(args: {
     notes,
   };
 }
-
-export { CONTRIBUTION_TYPES };

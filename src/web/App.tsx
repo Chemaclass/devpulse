@@ -1,10 +1,12 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
-  TContributionType,
   derivePersona,
+  emptyTypeRecord,
   getReport,
   GitHubError,
   parseUsername,
+  parseUTCDate,
+  todayISO,
   TPersona,
   TReport,
 } from "../core/index.js";
@@ -29,6 +31,7 @@ import { Persona } from "./components/Persona.js";
 import { StatTile } from "./components/StatTile.js";
 import { trackProfileView } from "./lib/cronitor.js";
 import { setQueryParam, syncUrl } from "./lib/url.js";
+import { useDismiss } from "./lib/useDismiss.js";
 import { useToken } from "./token.js";
 
 // three.js is heavy; only load it when the 3D view is shown.
@@ -39,7 +42,7 @@ const Compare = lazy(() =>
   import("./components/Compare.js").then((m) => ({ default: m.Compare })),
 );
 
-type Mode = "overall" | "latest" | "date";
+type TMode = "overall" | "latest" | "date";
 const EXAMPLES = ["torvalds", "gaearon", "chemaclass"];
 
 const SITE = "https://chemaclass.github.io/devpulse/";
@@ -51,23 +54,7 @@ function ShareTools({ login, persona }: { login: string; persona: TPersona }) {
   const [copied, setCopied] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const reportUrl = `${window.location.origin}${window.location.pathname}?u=${login}`;
-
-  // Close the menu on an outside click or Escape.
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
+  useDismiss(wrapRef, open, () => setOpen(false));
   const badge = `[![DevPulse](https://img.shields.io/badge/DevPulse-${encodeURIComponent(
     persona.title,
   )}-2f7d44?logo=github)](${SITE}?u=${login})`;
@@ -139,11 +126,11 @@ export function App() {
   const [report, setReport] = useState<TReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<Mode>("overall");
+  const [mode, setMode] = useState<TMode>("overall");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   // A view (mode + day) read from the URL, applied once the report loads.
   const [pendingView, setPendingView] = useState<{
-    mode: Mode;
+    mode: TMode;
     date: string | null;
   } | null>(null);
   // Second user for side-by-side comparison.
@@ -175,7 +162,7 @@ export function App() {
           "GitHub's public API rate limit was hit (60 req/hour per IP). Please try again in a little while.",
         );
       } else {
-        setError((err as Error).message);
+        setError(err instanceof Error ? err.message : String(err));
       }
     } finally {
       setLoading(false);
@@ -196,7 +183,7 @@ export function App() {
       setVsError(
         err instanceof GitHubError && err.kind === "rate_limited"
           ? "GitHub rate limit hit. Try again in a little while."
-          : (err as Error).message,
+          : err instanceof Error ? err.message : String(err),
       );
     } finally {
       setVsLoading(false);
@@ -241,7 +228,7 @@ export function App() {
       const u = params.get("u");
       if (!u) return;
       const d = params.get("d");
-      const m: Mode = d ? "date" : params.get("mode") === "latest" ? "latest" : "overall";
+      const m: TMode = d ? "date" : params.get("mode") === "latest" ? "latest" : "overall";
       setQuery(u);
       setPendingView({ mode: m, date: d });
       setPendingVs(params.get("vs"));
@@ -471,8 +458,8 @@ function Dashboard({
   vsError,
 }: {
   report: TReport;
-  mode: Mode;
-  setMode: (m: Mode) => void;
+  mode: TMode;
+  setMode: (m: TMode) => void;
   selectedDate: string | null;
   setSelectedDate: (d: string | null) => void;
   onCompare: (name: string) => void;
@@ -566,7 +553,7 @@ function Dashboard({
               <input
                 type="date"
                 value={selectedDate ?? ""}
-                max={new Date().toISOString().slice(0, 10)}
+                max={todayISO()}
                 onChange={(e) => setSelectedDate(e.target.value || null)}
               />
             )}
@@ -777,13 +764,7 @@ function DayView({
   const data = useMemo(() => {
     if (!date) return null;
     const events = report.events.filter((e) => e.date === date);
-    const byType: Record<TContributionType, number> = {
-      commit: 0,
-      pullRequest: 0,
-      issue: 0,
-      review: 0,
-      other: 0,
-    };
+    const byType = emptyTypeRecord();
     const repoTotals = new Map<string, { url: string; total: number }>();
     for (const e of events) {
       if (e.weight > 0) byType[e.type] += e.weight;
@@ -809,7 +790,7 @@ function DayView({
   }
   if (!data) return null;
 
-  const pretty = new Date(date + "T00:00:00Z").toLocaleDateString(undefined, {
+  const pretty = parseUTCDate(date).toLocaleDateString(undefined, {
     weekday: "long",
     year: "numeric",
     month: "long",

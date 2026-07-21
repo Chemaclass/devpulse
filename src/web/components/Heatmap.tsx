@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { computeStreaks } from "../../core/contributions.js";
+import { parseUTCDate, todayISO } from "../../core/dates.js";
 import { TCalendarDay } from "../../core/types.js";
 
 type TProps = {
@@ -34,7 +35,7 @@ export function Heatmap({
     // The contributions API pads the calendar to year-end with empty future
     // days. Drop anything after today so the grid ends "now" instead of
     // trailing months of blanks (which also garbled the month labels).
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayISO();
     const upToToday = days.filter((d) => d.date <= today);
     return upToToday.slice(-window);
   }, [days, window]);
@@ -47,7 +48,7 @@ export function Heatmap({
   const cells: (TCalendarDay | null)[] = useMemo(() => {
     const out: (TCalendarDay | null)[] = [];
     if (recent.length) {
-      const firstDow = new Date(recent[0].date + "T00:00:00Z").getUTCDay();
+      const firstDow = parseUTCDate(recent[0].date).getUTCDay();
       for (let i = 0; i < firstDow; i++) out.push(null);
     }
     out.push(...recent);
@@ -63,7 +64,7 @@ export function Heatmap({
     for (let col = 0; col < numWeeks; col++) {
       const cell = cells[col * 7];
       if (!cell) continue;
-      const month = new Date(cell.date + "T00:00:00Z").getUTCMonth();
+      const month = parseUTCDate(cell.date).getUTCMonth();
       if (month === lastMonth) continue;
       lastMonth = month;
       // Skip labels that would crowd the previous one (e.g. a partial first
@@ -166,7 +167,7 @@ export function Heatmap({
             {hover.day.count === 1 ? "" : "s"}
           </div>
           <div className="tip-date">
-            {new Date(hover.day.date + "T00:00:00Z").toLocaleDateString(
+            {parseUTCDate(hover.day.date).toLocaleDateString(
               undefined,
               {
                 weekday: "long",

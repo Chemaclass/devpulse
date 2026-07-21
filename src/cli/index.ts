@@ -78,7 +78,7 @@ async function main() {
     if (err instanceof GitHubError && err.kind === "rate_limited") {
       console.error("✗ Rate limited by GitHub's public API. Try again in a bit.");
     } else {
-      console.error(`✗ ${(err as Error).message}`);
+      console.error(`✗ ${err instanceof Error ? err.message : String(err)}`);
     }
     process.exit(1);
   }

@@ -1,6 +1,6 @@
-import { TReport } from "../core/index.js";
+import { TReport, todayISO } from "../core/index.js";
 
-export type TBadge = {
+type TBadge = {
   icon: string;
   label: string;
   desc: string;
@@ -45,7 +45,7 @@ function yearsSince(iso: string): number {
 
 /** Total contributions in the last `lookback` days, from the calendar. */
 function recentContributions(report: TReport, lookback = 90): number {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const cutoff = new Date(Date.now() - lookback * 86_400_000)
     .toISOString()
     .slice(0, 10);

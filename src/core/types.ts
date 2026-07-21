@@ -84,7 +84,7 @@ export type TLanguageStat = {
 };
 
 /** Per-repository contributions over the last year (GraphQL, token). */
-export type TRepoYearStat = {
+type TRepoYearStat = {
   repo: string;
   repoUrl: string;
   total: number;

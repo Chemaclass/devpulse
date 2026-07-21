@@ -1,6 +1,8 @@
 // Derives a fun "developer archetype" from a TReport.
 // Pure and dependency-free so both the web app and the CLI can use it.
 
+import { weekdayBuckets } from "./contributions.js";
+import { parseUTCDate } from "./dates.js";
 import {
   TActivityEvent,
   TCalendarDay,
@@ -8,7 +10,7 @@ import {
   TReport,
 } from "./types.js";
 
-export type TPersonaTrait = {
+type TPersonaTrait = {
   icon: string;
   label: string;
   value: string;
@@ -88,17 +90,9 @@ type TWeekdayProfile = {
  * which can be a single day and skew the numbers.
  */
 function weekdayProfileFromCalendar(days: TCalendarDay[]): TWeekdayProfile {
-  const buckets = new Array(7).fill(0);
-  let weekend = 0;
-  let total = 0;
-  for (const d of days) {
-    if (d.count <= 0) continue;
-    const dow = new Date(d.date + "T00:00:00Z").getUTCDay();
-    if (Number.isNaN(dow)) continue;
-    buckets[dow] += d.count;
-    total += d.count;
-    if (dow === 0 || dow === 6) weekend += d.count;
-  }
+  const buckets = weekdayBuckets(days);
+  const total = buckets.reduce((s, n) => s + n, 0);
+  const weekend = buckets[0] + buckets[6];
   const fd = indexOfMax(buckets);
   return {
     favWeekday: buckets[fd] > 0 ? fd : null,
@@ -111,7 +105,7 @@ function peakMonthFromCalendar(days: TCalendarDay[]): number | null {
   const buckets = new Array(12).fill(0);
   for (const d of days) {
     if (d.count <= 0) continue;
-    const m = new Date(d.date + "T00:00:00Z").getUTCMonth();
+    const m = parseUTCDate(d.date).getUTCMonth();
     if (!Number.isNaN(m)) buckets[m] += d.count;
   }
   const m = indexOfMax(buckets);

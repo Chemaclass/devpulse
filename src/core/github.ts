@@ -25,7 +25,7 @@ async function ghFetch(
     res = await fetchImpl(url, { headers: ghHeaders() });
   } catch (err) {
     throw new GitHubError(
-      `Network error reaching GitHub: ${(err as Error).message}`,
+      `Network error reaching GitHub: ${err instanceof Error ? err.message : String(err)}`,
       undefined,
       "network",
     );
@@ -43,6 +43,21 @@ async function ghFetch(
   return res;
 }
 
+/** The subset of GitHub's REST user response that {@link fetchProfile} reads. */
+type TRawUser = {
+  login?: string;
+  name?: string | null;
+  avatar_url?: string;
+  html_url?: string;
+  bio?: string | null;
+  company?: string | null;
+  location?: string | null;
+  followers?: number;
+  following?: number;
+  public_repos?: number;
+  created_at?: string;
+};
+
 export async function fetchProfile(
   username: string,
   fetchImpl: typeof fetch = fetch,
@@ -57,15 +72,15 @@ export async function fetchProfile(
   if (!res.ok) {
     throw new GitHubError(`GitHub error (${res.status}).`, res.status, "unknown");
   }
-  const u = (await res.json()) as Record<string, unknown>;
+  const u = (await res.json()) as TRawUser;
   return {
     login: String(u.login),
-    name: (u.name as string) ?? null,
+    name: u.name ?? null,
     avatarUrl: String(u.avatar_url),
     htmlUrl: String(u.html_url),
-    bio: (u.bio as string) ?? null,
-    company: (u.company as string) ?? null,
-    location: (u.location as string) ?? null,
+    bio: u.bio ?? null,
+    company: u.company ?? null,
+    location: u.location ?? null,
     followers: Number(u.followers ?? 0),
     following: Number(u.following ?? 0),
     publicRepos: Number(u.public_repos ?? 0),

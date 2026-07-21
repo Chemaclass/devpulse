@@ -6,16 +6,16 @@ import {
   useState,
 } from "react";
 
-export type Theme = "light" | "dark";
+export type TTheme = "light" | "dark";
 
 const STORAGE_KEY = "devpulse-theme";
 
-const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({
+const ThemeContext = createContext<{ theme: TTheme; toggle: () => void }>({
   theme: "dark",
   toggle: () => {},
 });
 
-function initialTheme(): Theme {
+function initialTheme(): TTheme {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === "light" || saved === "dark") return saved;
@@ -28,7 +28,7 @@ function initialTheme(): Theme {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(initialTheme);
+  const [theme, setTheme] = useState<TTheme>(initialTheme);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
