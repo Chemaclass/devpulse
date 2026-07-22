@@ -70,7 +70,13 @@ The **`Report`** interface in [`src/core/types.ts`](src/core/types.ts) is the he
 ```bash
 npm run build        # type-checks AND builds — must be clean
 npm test             # unit tests must pass
+npm run lint         # ESLint (enforces the T-prefix / no-interface conventions)
 ```
+
+A **pre-commit hook** (installed automatically by `npm install` via
+`simple-git-hooks`) runs `lint-staged` (ESLint + Prettier on staged files) and
+a full type-check, so most of the above is enforced before a commit lands. Skip
+it in a pinch with `SKIP_SIMPLE_GIT_HOOKS=1 git commit …`.
 
 Tests for new core logic are very welcome — the pure functions in `aggregate.ts`, `contributions.ts` and `persona.ts` are ideal (pass a mock `fetch` to exercise `getReport` without the network). Then smoke-test the UI you touched: a high- and low-activity user, all three modes, and a username that doesn't exist (friendly error, not a crash).
 
