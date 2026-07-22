@@ -1,3 +1,4 @@
+import { readCachedResponse, writeCachedResponse } from "./httpCache.js";
 import { TActivityEvent, GitHubError, TLanguageStat, TProfile } from "./types.js";
 
 const API = "https://api.github.com";
@@ -16,19 +17,38 @@ function ghHeaders(): Record<string, string> {
   };
 }
 
+// Build a fresh 200 Response from a cached body, so callers can `.json()` it
+// exactly as they would a live one — the conditional cache stays invisible.
+function jsonResponse(body: string, source?: Response): Response {
+  return new Response(body, {
+    status: 200,
+    headers: source?.headers ?? { "Content-Type": "application/json" },
+  });
+}
+
 async function ghFetch(
   url: string,
   fetchImpl: typeof fetch,
 ): Promise<Response> {
+  const cached = readCachedResponse(url);
+  const headers = ghHeaders();
+  if (cached) headers["If-None-Match"] = cached.etag;
+
   let res: Response;
   try {
-    res = await fetchImpl(url, { headers: ghHeaders() });
+    res = await fetchImpl(url, { headers });
   } catch (err) {
     throw new GitHubError(
       `Network error reaching GitHub: ${err instanceof Error ? err.message : String(err)}`,
       undefined,
       "network",
     );
+  }
+
+  // Not modified since the stored ETag: reuse the body. A 304 does not count
+  // against the REST rate limit, so this is the cheap fast-path after TTL.
+  if (res.status === 304 && cached) {
+    return jsonResponse(cached.body, res);
   }
   if (res.status === 403 || res.status === 429) {
     const remaining = res.headers.get("x-ratelimit-remaining");
@@ -39,6 +59,13 @@ async function ghFetch(
         "rate_limited",
       );
     }
+  }
+  // Cache the body against its ETag for the next conditional request.
+  const etag = res.ok ? res.headers.get("etag") : null;
+  if (etag) {
+    const body = await res.text();
+    writeCachedResponse(url, etag, body);
+    return jsonResponse(body, res);
   }
   return res;
 }
@@ -148,16 +175,22 @@ export async function fetchTopLanguages(
 ): Promise<TLanguageStat[]> {
   const tally = new Map<string, { repos: number; stars: number }>();
   try {
-    for (let page = 1; page <= maxPages; page++) {
-      const res = await ghFetch(
-        `${API}/users/${encodeURIComponent(
-          username,
-        )}/repos?per_page=${PAGE_SIZE}&page=${page}&sort=pushed&type=owner`,
-        fetchImpl,
-      );
-      if (!res.ok) break;
-      const batch = (await res.json()) as TRawRepo[];
-      if (!Array.isArray(batch) || batch.length === 0) break;
+    // Pages are bounded (maxPages) and independent, so fetch them concurrently
+    // rather than serially. An over-fetched empty trailing page is harmless and
+    // cheap (its 304 costs no rate-limit budget once cached).
+    const batches = await Promise.all(
+      Array.from({ length: maxPages }, async (_, i) => {
+        const res = await ghFetch(
+          `${API}/users/${encodeURIComponent(
+            username,
+          )}/repos?per_page=${PAGE_SIZE}&page=${i + 1}&sort=pushed&type=owner`,
+          fetchImpl,
+        );
+        return res.ok ? ((await res.json()) as TRawRepo[]) : [];
+      }),
+    );
+    for (const batch of batches) {
+      if (!Array.isArray(batch)) continue;
       for (const r of batch) {
         if (r.fork || !r.language) continue;
         const e = tally.get(r.language) ?? { repos: 0, stars: 0 };
@@ -165,7 +198,6 @@ export async function fetchTopLanguages(
         e.stars += r.stargazers_count ?? 0;
         tally.set(r.language, e);
       }
-      if (batch.length < PAGE_SIZE) break;
     }
   } catch {
     return [];

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { parseEvent, TRawEvent } from "./github.js";
+import { describe, expect, it, vi } from "vitest";
+import { fetchProfile, parseEvent, TRawEvent } from "./github.js";
 
 function raw(type: string, payload: Record<string, unknown>): TRawEvent {
   return {
@@ -47,5 +47,44 @@ describe("parseEvent other types", () => {
 
   it("returns null for unknown event types", () => {
     expect(parseEvent(raw("MemberEvent", {}))).toBeNull();
+  });
+});
+
+describe("ghFetch conditional caching (ETag)", () => {
+  const userBody = JSON.stringify({
+    login: "octocat",
+    avatar_url: "a",
+    html_url: "h",
+    followers: 1,
+    following: 2,
+    public_repos: 3,
+    created_at: "2020-01-01T00:00:00Z",
+  });
+
+  it("sends If-None-Match after a first hit and reuses the body on 304", async () => {
+    const sentHeaders: Array<Record<string, string>> = [];
+    const mockFetch = vi.fn(
+      async (_url: string | URL | Request, init?: RequestInit) => {
+        const headers = (init?.headers ?? {}) as Record<string, string>;
+        sentHeaders.push(headers);
+        if (headers["If-None-Match"] === '"v1"') {
+          return new Response(null, { status: 304 });
+        }
+        return new Response(userBody, {
+          status: 200,
+          headers: { etag: '"v1"', "Content-Type": "application/json" },
+        });
+      },
+    );
+    const fetchImpl = mockFetch as unknown as typeof fetch;
+
+    const first = await fetchProfile("octocat", fetchImpl);
+    const second = await fetchProfile("octocat", fetchImpl);
+
+    expect(first.login).toBe("octocat");
+    expect(second).toEqual(first);
+    expect(sentHeaders[0]["If-None-Match"]).toBeUndefined();
+    expect(sentHeaders[1]["If-None-Match"]).toBe('"v1"');
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });
