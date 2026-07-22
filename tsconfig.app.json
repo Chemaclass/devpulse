@@ -20,5 +20,5 @@
     "exactOptionalPropertyTypes": true
   },
   "include": ["src/core", "src/web"],
-  "exclude": ["src/**/*.test.ts"]
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }
