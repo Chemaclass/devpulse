@@ -11,3 +11,6 @@ yarn-error.log*
 .vite
 *.tsbuildinfo
 vite.config.ts.timestamp-*.mjs
+
+# test coverage
+coverage
