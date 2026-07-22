@@ -109,7 +109,7 @@ function withAuth(fetchImpl: typeof fetch, token: string): typeof fetch {
  */
 export function parseUsername(input: string): string {
   const trimmed = input.trim();
-  const urlMatch = trimmed.match(/github\.com\/([a-zA-Z0-9-]+)/i);
-  if (urlMatch) return urlMatch[1];
+  const fromUrl = trimmed.match(/github\.com\/([a-zA-Z0-9-]+)/i)?.[1];
+  if (fromUrl) return fromUrl;
   return trimmed.replace(/^@/, "");
 }

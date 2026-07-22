@@ -40,8 +40,9 @@ type TTree = {
 function buildTrees(days: TCalendarDay[], window: number): TTree[] {
   const today = todayISO();
   const recent = days.filter((d) => d.date <= today).slice(-window);
-  if (!recent.length) return [];
-  const firstDow = parseUTCDate(recent[0].date).getUTCDay();
+  const first = recent[0];
+  if (!first) return [];
+  const firstDow = parseUTCDate(first.date).getUTCDay();
   return recent.map((d, i) => {
     const idx = i + firstDow;
     return {
@@ -67,7 +68,7 @@ function Forest({
   scaleMax: number;
   colors: string[];
   onHover: (t: TTree | null) => void;
-  onSelect?: (date: string) => void;
+  onSelect?: ((date: string) => void) | undefined;
 }) {
   // Unit geometries scaled per tree, so everything is shared (5 foliage
   // materials + 1 trunk material, two geometries total).
@@ -97,6 +98,10 @@ function Forest({
   return (
     <group>
       {trees.map((t) => {
+        // Empty days use the level-0 tone; trees use their own level. Guard the
+        // lookup in case a caller passes fewer colors than contribution levels.
+        const foliage = foliageMats[t.count === 0 ? 0 : t.level];
+        if (!foliage) return null;
         // Absolute scale against a shared reference, so the same count is the
         // same tree height for any user (fair side-by-side comparison).
         const ratio = Math.min(1, t.count / scaleMax);
@@ -120,7 +125,7 @@ function Forest({
             <mesh
               key={t.date}
               geometry={coneGeo}
-              material={foliageMats[0]}
+              material={foliage}
               position={[x, 0.07, z]}
               scale={[0.24, 0.16, 0.24]}
               {...handlers}
@@ -141,7 +146,7 @@ function Forest({
             />
             <mesh
               geometry={coneGeo}
-              material={foliageMats[t.level]}
+              material={foliage}
               position={[0, trunkH + foliageH / 2, 0]}
               scale={[r, foliageH, r]}
             />

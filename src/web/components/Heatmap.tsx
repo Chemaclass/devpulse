@@ -57,8 +57,9 @@ export const Heatmap = memo(function Heatmap({
   // Pad the start so the first column begins on a Sunday-aligned grid.
   const cells: (TCalendarDay | null)[] = useMemo(() => {
     const out: (TCalendarDay | null)[] = [];
-    if (recent.length) {
-      const firstDow = parseUTCDate(recent[0].date).getUTCDay();
+    const first = recent[0];
+    if (first) {
+      const firstDow = parseUTCDate(first.date).getUTCDay();
       for (let i = 0; i < firstDow; i++) out.push(null);
     }
     out.push(...recent);
@@ -81,7 +82,7 @@ export const Heatmap = memo(function Heatmap({
       // column), so adjacent month names never overlap.
       const prev = labels[labels.length - 1];
       if (prev && col - prev.col < 3) continue;
-      labels.push({ col, text: MONTHS[month] });
+      labels.push({ col, text: MONTHS[month] ?? "" });
     }
     return labels;
   }, [cells, numWeeks]);

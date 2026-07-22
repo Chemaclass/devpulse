@@ -12,7 +12,7 @@ export function StatTile({
   icon: string;
   value: string;
   label: string;
-  sub?: string;
+  sub?: string | undefined;
 }) {
   return (
     <div className={`stat ${className ?? ""}`}>

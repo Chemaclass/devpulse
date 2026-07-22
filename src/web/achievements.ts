@@ -29,7 +29,7 @@ const LEVEL_TITLES = [
 ];
 
 function titleFor(level: number): string {
-  return LEVEL_TITLES[Math.min(level, LEVEL_TITLES.length - 1)];
+  return LEVEL_TITLES[Math.min(level, LEVEL_TITLES.length - 1)] ?? "";
 }
 
 /**
