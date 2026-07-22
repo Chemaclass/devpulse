@@ -47,7 +47,20 @@ npm run report -- <username|profile-url> [--out ./out] [--json-only|--md-only]
 
 ## 🧱 How it works
 
-A framework-agnostic **core** (`src/core`) fetches and aggregates everything into one `Report`; the **web** and **CLI** frontends just render it. Data is public and unauthenticated:
+Three layers, one contract. A framework-agnostic **core** (`src/core`) is the only layer that talks to GitHub; it fetches and aggregates everything into a single `Report`, which the **web** and **CLI** frontends just render.
+
+```mermaid
+flowchart LR
+  GH["GitHub public APIs"] --> core
+  subgraph core["src/core — data + logic (no React, no Node-only APIs)"]
+    direction LR
+    F["fetch/adapters<br/>github · contributions · graphql"] --> A["aggregate"] --> R[["Report<br/>(types.ts)"]]
+  end
+  R --> WEB["src/web<br/>React UI"]
+  R --> CLI["src/cli<br/>report.json / .md"]
+```
+
+**Golden rule:** business logic lives in `core`; `web` and `cli` only call it and render. `core` never imports React or Node-only modules, so it runs in the browser and the CLI alike (`fetch` is injected for testability). Data is public and unauthenticated:
 
 | Source | Gives us | Limit |
 | --- | --- | --- |
