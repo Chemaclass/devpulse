@@ -20,7 +20,7 @@ A small Vite + React + TypeScript app (plus a matching Node CLI) that runs entir
 
 ## 🚀 Quick start
 
-> **Prerequisites:** [Node.js](https://nodejs.org) 18+ and npm. No token or `.env` needed.
+> **Prerequisites:** [Node.js](https://nodejs.org) 20+ (see `.nvmrc`) and npm. No token or `.env` needed.
 
 ```bash
 git clone https://github.com/Chemaclass/devpulse.git
