@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { computeStreaks } from "../../core/contributions.js";
 import { parseUTCDate, todayISO } from "../../core/dates.js";
 import { TCalendarDay } from "../../core/types.js";
@@ -23,7 +23,7 @@ type THover = {
   y: number;
 }
 
-export function Heatmap({
+export const Heatmap = memo(function Heatmap({
   days,
   window = 371,
   selectedDate,
@@ -76,9 +76,40 @@ export function Heatmap({
     return labels;
   }, [cells, numWeeks]);
 
-  function showTip(day: TCalendarDay, e: React.MouseEvent) {
+  const showTip = useCallback((day: TCalendarDay, e: React.MouseEvent) => {
     setHover({ day, x: e.clientX, y: e.clientY });
-  }
+  }, []);
+
+  // The 365-cell grid depends only on the calendar and selection, never on
+  // hover. Memoize it so continuous mouse-move (which updates the tooltip via
+  // hover state) doesn't rebuild every cell element on each event.
+  const cellEls = useMemo(
+    () =>
+      cells.map((d, i) => {
+        const col = Math.floor(i / 7);
+        const row = i % 7;
+        const delay = (col + row) * 12;
+        return d ? (
+          <div
+            key={d.date}
+            className={`cell l${d.level}${
+              selectedDate === d.date ? " sel" : ""
+            }`}
+            style={{
+              cursor: onSelect ? "pointer" : "default",
+              animationDelay: `${delay}ms`,
+            }}
+            onClick={() => onSelect?.(d.date)}
+            onMouseEnter={(e) => showTip(d, e)}
+            onMouseMove={(e) => showTip(d, e)}
+            onMouseLeave={() => setHover(null)}
+          />
+        ) : (
+          <div key={`pad-${i}`} className="cell pad" />
+        );
+      }),
+    [cells, selectedDate, onSelect, showTip],
+  );
 
   return (
     <div className="heatmap-wrap">
@@ -118,31 +149,7 @@ export function Heatmap({
             ))}
           </div>
 
-          <div className="heatmap">
-            {cells.map((d, i) => {
-              const col = Math.floor(i / 7);
-              const row = i % 7;
-              const delay = (col + row) * 12;
-              return d ? (
-                <div
-                  key={d.date}
-                  className={`cell l${d.level}${
-                    selectedDate === d.date ? " sel" : ""
-                  }`}
-                  style={{
-                    cursor: onSelect ? "pointer" : "default",
-                    animationDelay: `${delay}ms`,
-                  }}
-                  onClick={() => onSelect?.(d.date)}
-                  onMouseEnter={(e) => showTip(d, e)}
-                  onMouseMove={(e) => showTip(d, e)}
-                  onMouseLeave={() => setHover(null)}
-                />
-              ) : (
-                <div key={`pad-${i}`} className="cell pad" />
-              );
-            })}
-          </div>
+          <div className="heatmap">{cellEls}</div>
         </div>
       </div>
 
@@ -183,4 +190,4 @@ export function Heatmap({
       )}
     </div>
   );
-}
+});

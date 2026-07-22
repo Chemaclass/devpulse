@@ -12,13 +12,6 @@ import {
 } from "../core/index.js";
 import { Landing, Skeleton } from "./components/AppStates.js";
 import { Bars, TBarDatum } from "./components/Bars.js";
-import {
-  DailyChart,
-  TypeDoughnut,
-  TypeRadar,
-  WeekdayBars,
-  YearBars,
-} from "./components/Charts.js";
 import { Feed } from "./components/Feed.js";
 import { GameCard } from "./components/GameCard.js";
 import {
@@ -40,6 +33,24 @@ const Skyline3D = lazy(() =>
 );
 const Compare = lazy(() =>
   import("./components/Compare.js").then((m) => ({ default: m.Compare })),
+);
+
+// Chart.js is only needed once a report renders (never on the landing page),
+// so load it on demand. The five charts share one dynamic Charts chunk.
+const DailyChart = lazy(() =>
+  import("./components/Charts.js").then((m) => ({ default: m.DailyChart })),
+);
+const TypeDoughnut = lazy(() =>
+  import("./components/Charts.js").then((m) => ({ default: m.TypeDoughnut })),
+);
+const TypeRadar = lazy(() =>
+  import("./components/Charts.js").then((m) => ({ default: m.TypeRadar })),
+);
+const WeekdayBars = lazy(() =>
+  import("./components/Charts.js").then((m) => ({ default: m.WeekdayBars })),
+);
+const YearBars = lazy(() =>
+  import("./components/Charts.js").then((m) => ({ default: m.YearBars })),
 );
 
 type TMode = "overall" | "latest" | "date";
@@ -692,7 +703,9 @@ function OverallView({
           <h3>Daily contributions · last 30 days</h3>
           <div style={{ height: 280 }}>
             {calendar.days.length ? (
-              <DailyChart byDay={byDay} days={calendar.days} />
+              <Suspense fallback={null}>
+                <DailyChart byDay={byDay} days={calendar.days} />
+              </Suspense>
             ) : (
               <p className="muted">No contributions to chart.</p>
             )}
@@ -701,7 +714,9 @@ function OverallView({
         <div className="card col-4">
           <h3>Contribution mix{mixSuffix}</h3>
           <div style={{ height: 280 }}>
-            <TypeDoughnut byType={mixByType} />
+            <Suspense fallback={null}>
+              <TypeDoughnut byType={mixByType} />
+            </Suspense>
           </div>
         </div>
 
@@ -725,20 +740,26 @@ function OverallView({
         <div className="card col-4">
           <h3>Contribution personality</h3>
           <div style={{ height: 260 }}>
-            <TypeRadar byType={mixByType} />
+            <Suspense fallback={null}>
+              <TypeRadar byType={mixByType} />
+            </Suspense>
           </div>
         </div>
         <div className="card col-4">
           <h3>Weekly rhythm</h3>
           <div style={{ height: 260 }}>
-            <WeekdayBars days={calendar.days} />
+            <Suspense fallback={null}>
+              <WeekdayBars days={calendar.days} />
+            </Suspense>
           </div>
         </div>
         <div className="card col-4">
           <h3>Contributions by year</h3>
           <div style={{ height: 260 }}>
             {Object.keys(calendar.totalByYear).length ? (
-              <YearBars totalByYear={calendar.totalByYear} />
+              <Suspense fallback={null}>
+                <YearBars totalByYear={calendar.totalByYear} />
+              </Suspense>
             ) : (
               <p className="muted">No yearly data.</p>
             )}
