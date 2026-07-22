@@ -4,7 +4,7 @@ Thanks for being here! This gets you from clone to merged PR. DevPulse is a smal
 
 ## Getting set up
 
-**Prerequisites:** [Node.js](https://nodejs.org) 18+ (CI uses 20) and npm. No token or `.env` needed.
+**Prerequisites:** [Node.js](https://nodejs.org) 20+ (see `.nvmrc`; CI uses 20) and npm. No token or `.env` needed.
 
 ```bash
 git clone https://github.com/<you>/devpulse.git

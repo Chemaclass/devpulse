@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "report": "tsx src/cli/index.ts",
+    "report:watch": "tsx watch src/cli/index.ts",
+    "clean": "rm -rf dist out",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -16,8 +18,9 @@
     "og:image": "\"${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}\" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=public/og-default.png \"file://$PWD/scripts/og-default.html\""
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
+  "packageManager": "npm@11.14.1",
   "keywords": [
     "github",
     "stats",
