@@ -7,6 +7,30 @@ import { defineConfig } from "vite";
 export default defineConfig({
   base: "./",
   plugins: [react()],
+  server: {
+    // Dev-only proxy: the web app rewrites GitHub API calls to `/gh` in dev
+    // (see src/web/lib/githubFetch.ts). This lets an optional GITHUB_TOKEN in
+    // the dev environment raise rate limits without exposing it to the browser.
+    // It has no effect on the production build.
+    proxy: {
+      "/gh": {
+        target: "https://api.github.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/gh/, ""),
+        configure: (proxy) => {
+          const token = process.env.GITHUB_TOKEN;
+          if (!token) return;
+          proxy.on("proxyReq", (proxyReq) => {
+            // Don't clobber an already-authenticated request (e.g. a user PAT
+            // carried by GraphQL) — only add the dev token when none is set.
+            if (!proxyReq.getHeader("authorization")) {
+              proxyReq.setHeader("authorization", `Bearer ${token}`);
+            }
+          });
+        },
+      },
+    },
+  },
   build: {
     outDir: "dist",
     // Emit source maps as separate files without referencing them from the

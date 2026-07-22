@@ -20,6 +20,7 @@ import { Icon } from "./components/Icon.js";
 import { Persona } from "./components/Persona.js";
 import { StatTile } from "./components/StatTile.js";
 import { trackProfileView } from "./lib/cronitor.js";
+import { apiFetch } from "./lib/githubFetch.js";
 import { setQueryParam, syncUrl } from "./lib/url.js";
 import { useDismiss } from "./lib/useDismiss.js";
 import { useToken } from "./token.js";
@@ -161,7 +162,7 @@ export function App() {
     setVsError(null);
     setQueryParam("vs", null);
     try {
-      const r = await getReport(username, fetch, token);
+      const r = await getReport(username, apiFetch, token);
       setReport(r);
       trackProfileView(r.profile.login);
     } catch (err) {
@@ -183,7 +184,7 @@ export function App() {
     setVsLoading(true);
     setVsError(null);
     try {
-      const r = await getReport(username, fetch, token);
+      const r = await getReport(username, apiFetch, token);
       setVsReport(r);
       setQueryParam("vs", r.profile.login);
       trackProfileView(r.profile.login, "compare");
