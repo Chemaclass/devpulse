@@ -34,7 +34,12 @@ function headerSection(report: TReport): string[] {
 
 function personaSection(report: TReport): string[] {
   const persona = derivePersona(report);
-  const lines = [`## ${persona.emoji} ${persona.title}`, "", `_${persona.tagline}_`, ""];
+  const lines = [
+    `## ${persona.emoji} ${persona.title}`,
+    "",
+    `_${persona.tagline}_`,
+    "",
+  ];
   for (const t of persona.traits) {
     lines.push(`- ${t.icon} **${t.label}:** ${t.value}`);
   }
@@ -64,7 +69,12 @@ function allTimeSection(calendar: TCalendarSummary): string[] {
 function byYearSection(calendar: TCalendarSummary): string[] {
   const years = Object.keys(calendar.totalByYear).sort().reverse();
   if (!years.length) return [];
-  const lines = [`### By year`, "", `| Year | Contributions |`, `| --- | ---: |`];
+  const lines = [
+    `### By year`,
+    "",
+    `| Year | Contributions |`,
+    `| --- | ---: |`,
+  ];
   for (const y of years) {
     lines.push(`| ${y} | ${calendar.totalByYear[y].toLocaleString()} |`);
   }
@@ -127,7 +137,10 @@ function lastYearSection(yearStats: TYearStats | undefined): string[] {
     "",
   ];
   if (yearStats.topRepos.length) {
-    lines.push(`| Top repository (last year) | Contributions |`, `| --- | ---: |`);
+    lines.push(
+      `| Top repository (last year) | Contributions |`,
+      `| --- | ---: |`,
+    );
     for (const r of yearStats.topRepos.slice(0, TOP_YEAR_REPOS)) {
       lines.push(`| [${r.repo}](${r.repoUrl}) | ${r.total} |`);
     }

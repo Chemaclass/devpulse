@@ -14,7 +14,7 @@ type TPersonaTrait = {
   icon: string;
   label: string;
   value: string;
-}
+};
 
 export type TPersona = {
   emoji: string;
@@ -23,7 +23,7 @@ export type TPersona = {
   /** css accent class, matches the glow-* helpers in styles.css */
   accent: string;
   traits: TPersonaTrait[];
-}
+};
 
 const WEEKDAY_NAMES = [
   "Sunday",
@@ -82,7 +82,7 @@ function peakHourFromEvents(events: TActivityEvent[]): number | null {
 type TWeekdayProfile = {
   favWeekday: number | null;
   weekendShare: number;
-}
+};
 
 /**
  * Favorite weekday and weekend share from the full contribution calendar
@@ -121,7 +121,7 @@ type TArchetype = {
   title: string;
   tagline: string;
   accent: string;
-}
+};
 
 // Minimum share of a contribution type that tips the archetype its way.
 // Reviews are rarer, so a smaller share still signals a reviewer.

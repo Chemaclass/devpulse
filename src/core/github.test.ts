@@ -13,7 +13,9 @@ function raw(type: string, payload: Record<string, unknown>): TRawEvent {
 
 describe("parseEvent PushEvent", () => {
   it("uses distinct_size when present", () => {
-    const e = parseEvent(raw("PushEvent", { distinct_size: 3, ref: "refs/heads/main" }));
+    const e = parseEvent(
+      raw("PushEvent", { distinct_size: 3, ref: "refs/heads/main" }),
+    );
     expect(e?.type).toBe("commit");
     expect(e?.weight).toBe(3);
     expect(e?.title).toContain("3 commits");
@@ -21,7 +23,9 @@ describe("parseEvent PushEvent", () => {
 
   it("counts at least one commit when the payload omits sizes", () => {
     // Regression: the events API now often returns only ref/head/before.
-    const e = parseEvent(raw("PushEvent", { ref: "refs/heads/main", head: "abc" }));
+    const e = parseEvent(
+      raw("PushEvent", { ref: "refs/heads/main", head: "abc" }),
+    );
     expect(e).not.toBeNull();
     expect(e?.type).toBe("commit");
     expect(e?.weight).toBe(1);
@@ -32,7 +36,10 @@ describe("parseEvent PushEvent", () => {
 describe("parseEvent other types", () => {
   it("counts opened pull requests", () => {
     const e = parseEvent(
-      raw("PullRequestEvent", { action: "opened", pull_request: { title: "Feat" } }),
+      raw("PullRequestEvent", {
+        action: "opened",
+        pull_request: { title: "Feat" },
+      }),
     );
     expect(e?.type).toBe("pullRequest");
     expect(e?.weight).toBe(1);
@@ -40,7 +47,10 @@ describe("parseEvent other types", () => {
 
   it("does not count a closed pull request", () => {
     const e = parseEvent(
-      raw("PullRequestEvent", { action: "closed", pull_request: { title: "Feat" } }),
+      raw("PullRequestEvent", {
+        action: "closed",
+        pull_request: { title: "Feat" },
+      }),
     );
     expect(e?.weight).toBe(0);
   });

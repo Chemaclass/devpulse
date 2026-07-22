@@ -5,7 +5,7 @@ type TBadge = {
   label: string;
   desc: string;
   earned: boolean;
-}
+};
 
 export type TGamification = {
   score: number;
@@ -15,7 +15,7 @@ export type TGamification = {
   nextLevelAt: number;
   pctToNext: number;
   badges: TBadge[];
-}
+};
 
 const LEVEL_TITLES = [
   "Lurker",

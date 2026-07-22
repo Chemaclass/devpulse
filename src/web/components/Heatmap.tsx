@@ -9,19 +9,29 @@ type TProps = {
   window?: number;
   selectedDate?: string | null;
   onSelect?: (date: string) => void;
-}
+};
 
 const WEEKDAYS = ["", "Mon", "", "Wed", "", "Fri", ""];
 const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 type THover = {
   day: TCalendarDay;
   x: number;
   y: number;
-}
+};
 
 export const Heatmap = memo(function Heatmap({
   days,
@@ -174,16 +184,13 @@ export const Heatmap = memo(function Heatmap({
             {hover.day.count === 1 ? "" : "s"}
           </div>
           <div className="tip-date">
-            {parseUTCDate(hover.day.date).toLocaleDateString(
-              undefined,
-              {
-                weekday: "long",
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-                timeZone: "UTC",
-              },
-            )}
+            {parseUTCDate(hover.day.date).toLocaleDateString(undefined, {
+              weekday: "long",
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              timeZone: "UTC",
+            })}
           </div>
           <div className={`tip-bar l${hover.day.level}`} />
         </div>

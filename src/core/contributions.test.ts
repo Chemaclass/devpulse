@@ -34,9 +34,9 @@ describe("computeStreaks", () => {
   });
 
   it("returns zero streaks for an all-empty calendar", () => {
-    expect(computeStreaks(days("2026-01-01", Array(30).fill(0)), TODAY)).toEqual(
-      { current: 0, longest: 0 },
-    );
+    expect(
+      computeStreaks(days("2026-01-01", Array(30).fill(0)), TODAY),
+    ).toEqual({ current: 0, longest: 0 });
   });
 });
 

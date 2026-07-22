@@ -27,7 +27,8 @@ class FakeStorage {
 }
 
 beforeEach(() => {
-  (globalThis as { sessionStorage?: unknown }).sessionStorage = new FakeStorage();
+  (globalThis as { sessionStorage?: unknown }).sessionStorage =
+    new FakeStorage();
   clearReportCache();
 });
 
@@ -51,7 +52,8 @@ describe("report cache", () => {
   it("reads from sessionStorage when memory is cold (survives reload)", () => {
     // Pre-seed L2 only; clearReportCache already emptied L1.
     const entry = JSON.stringify({ report, expires: T0 + TTL });
-    const store = (globalThis as { sessionStorage: FakeStorage }).sessionStorage;
+    const store = (globalThis as { sessionStorage: FakeStorage })
+      .sessionStorage;
     store.setItem("devpulse-report:u|anon", entry);
     expect(readReport("u|anon", T0 + 1000)).toEqual(report);
   });

@@ -88,9 +88,7 @@ export function buildReport(args: {
   const to = dates[dates.length - 1] ?? "";
   const days =
     from && to
-      ? Math.round(
-          (Date.parse(to) - Date.parse(from)) / MS_PER_DAY,
-        ) + 1
+      ? Math.round((Date.parse(to) - Date.parse(from)) / MS_PER_DAY) + 1
       : 0;
 
   return {

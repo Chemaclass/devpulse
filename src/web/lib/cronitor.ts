@@ -14,7 +14,10 @@ declare global {
  * Record that a GitHub profile was viewed, tagged with the username.
  * `source` distinguishes the main lookup from the side-by-side compare slot.
  */
-export function trackProfileView(username: string, source: "main" | "compare" = "main") {
+export function trackProfileView(
+  username: string,
+  source: "main" | "compare" = "main",
+) {
   // The inline snippet defines a queueing stub immediately, so this is safe
   // to call before script.js has finished loading.
   window.cronitor?.("track", "profile_view", { username, source });

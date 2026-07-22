@@ -76,7 +76,10 @@ function barScales(
 ): ChartOptions<"bar">["scales"] {
   return {
     x: { ticks: { color: tickColor }, grid: { display: false } },
-    y: { ticks: { color: tickColor, precision: 0 }, grid: { color: gridColor } },
+    y: {
+      ticks: { color: tickColor, precision: 0 },
+      grid: { color: gridColor },
+    },
   };
 }
 
@@ -215,7 +218,10 @@ export const TypeDoughnut = memo(function TypeDoughnut({
         maintainAspectRatio: false,
         cutout: "62%",
         plugins: {
-          legend: { position: "bottom", labels: { color: tickColor, boxWidth: 12 } },
+          legend: {
+            position: "bottom",
+            labels: { color: tickColor, boxWidth: 12 },
+          },
         },
       }}
     />
@@ -339,7 +345,7 @@ type TRadarSeries = {
   byType: Record<TContributionType, number>;
   color: string;
   fill: string;
-}
+};
 
 export const TypeRadarCompare = memo(function TypeRadarCompare({
   a,
@@ -380,7 +386,7 @@ type TYearSeries = {
   label: string;
   totalByYear: Record<string, number>;
   color: string;
-}
+};
 
 export const YearBarsCompare = memo(function YearBarsCompare({
   a,

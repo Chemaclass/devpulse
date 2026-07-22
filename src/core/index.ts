@@ -27,9 +27,7 @@ export async function getReport(
 ): Promise<TReport> {
   const clean = username.trim().replace(/^@/, "");
   if (!/^[a-zA-Z0-9-]{1,39}$/.test(clean)) {
-    throw new Error(
-      `"${username}" is not a valid GitHub username.`,
-    );
+    throw new Error(`"${username}" is not a valid GitHub username.`);
   }
 
   // Key by user + a token fingerprint, so switching/clearing/fixing a token
@@ -111,9 +109,7 @@ function withAuth(fetchImpl: typeof fetch, token: string): typeof fetch {
  */
 export function parseUsername(input: string): string {
   const trimmed = input.trim();
-  const urlMatch = trimmed.match(
-    /github\.com\/([a-zA-Z0-9-]+)/i,
-  );
+  const urlMatch = trimmed.match(/github\.com\/([a-zA-Z0-9-]+)/i);
   if (urlMatch) return urlMatch[1];
   return trimmed.replace(/^@/, "");
 }

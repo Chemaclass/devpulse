@@ -68,7 +68,7 @@ const GLYPHS: ReadonlyMap<string, LucideIcon> = new Map(
     "📍": MapPin,
     "🌱": Sprout,
     "🏅": Medal,
-    "ℹ️": Info,
+    ℹ️: Info,
     "🔥": Flame,
     "📅": Calendar,
     "🏆": Trophy,
@@ -116,7 +116,7 @@ export type TIconProps = {
   className?: string;
   /** Accessible name. Omit for decorative icons (rendered aria-hidden). */
   label?: string;
-}
+};
 
 /** Render an emoji glyph as a crisp, currentColor SVG icon. */
 export function Icon({ glyph, size = "1em", className, label }: TIconProps) {
@@ -126,7 +126,11 @@ export function Icon({ glyph, size = "1em", className, label }: TIconProps) {
   // Unknown glyph: fall back to the literal emoji so nothing silently vanishes.
   if (!Glyph) {
     return (
-      <span className={cls} aria-hidden={label ? undefined : true} aria-label={label}>
+      <span
+        className={cls}
+        aria-hidden={label ? undefined : true}
+        aria-label={label}
+      >
         {glyph}
       </span>
     );

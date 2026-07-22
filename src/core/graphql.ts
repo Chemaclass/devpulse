@@ -32,7 +32,7 @@ query($login: String!) {
 type TRepoContribution = {
   repository: { nameWithOwner: string; url: string };
   contributions: { totalCount: number };
-}
+};
 
 type TContributionsCollection = {
   totalCommitContributions: number;
@@ -43,7 +43,7 @@ type TContributionsCollection = {
   commitContributionsByRepository: TRepoContribution[];
   pullRequestContributionsByRepository: TRepoContribution[];
   issueContributionsByRepository: TRepoContribution[];
-}
+};
 
 /**
  * Accurate last-year stats via the GraphQL API. Requires a token. Reaches far

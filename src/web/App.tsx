@@ -14,10 +14,7 @@ import { Landing, Skeleton } from "./components/AppStates.js";
 import { Bars, TBarDatum } from "./components/Bars.js";
 import { Feed } from "./components/Feed.js";
 import { GameCard } from "./components/GameCard.js";
-import {
-  ThemeToggle,
-  TokenControl,
-} from "./components/HeaderControls.js";
+import { ThemeToggle, TokenControl } from "./components/HeaderControls.js";
 import { Heatmap } from "./components/Heatmap.js";
 import { Icon } from "./components/Icon.js";
 import { Persona } from "./components/Persona.js";
@@ -194,7 +191,9 @@ export function App() {
       setVsError(
         err instanceof GitHubError && err.kind === "rate_limited"
           ? "GitHub rate limit hit. Try again in a little while."
-          : err instanceof Error ? err.message : String(err),
+          : err instanceof Error
+            ? err.message
+            : String(err),
       );
     } finally {
       setVsLoading(false);
@@ -239,7 +238,11 @@ export function App() {
       const u = params.get("u");
       if (!u) return;
       const d = params.get("d");
-      const m: TMode = d ? "date" : params.get("mode") === "latest" ? "latest" : "overall";
+      const m: TMode = d
+        ? "date"
+        : params.get("mode") === "latest"
+          ? "latest"
+          : "overall";
       setQuery(u);
       setPendingView({ mode: m, date: d });
       setPendingVs(params.get("vs"));
@@ -576,10 +579,13 @@ function Dashboard({
       <CompareBar onCompare={onCompare} loading={vsLoading} error={vsError} />
 
       {mode === "overall" ? (
-        <OverallView report={report} onPickDay={(d) => {
-          setMode("date");
-          setSelectedDate(d);
-        }} />
+        <OverallView
+          report={report}
+          onPickDay={(d) => {
+            setMode("date");
+            setSelectedDate(d);
+          }}
+        />
       ) : (
         <DayView report={report} date={activeDate} />
       )}
@@ -678,7 +684,9 @@ function OverallView({
         </div>
         {view === "3d" ? (
           <Suspense
-            fallback={<div className="skyline-loading muted">Rendering 3D…</div>}
+            fallback={
+              <div className="skyline-loading muted">Rendering 3D…</div>
+            }
           >
             <Skyline3D days={calendar.days} onSelect={onPickDay} />
           </Suspense>
@@ -733,7 +741,9 @@ function OverallView({
           {langBars.length ? (
             <Bars data={langBars} />
           ) : (
-            <p className="muted">No public repositories with a primary language.</p>
+            <p className="muted">
+              No public repositories with a primary language.
+            </p>
           )}
         </div>
 
@@ -775,13 +785,7 @@ function OverallView({
   );
 }
 
-function DayView({
-  report,
-  date,
-}: {
-  report: TReport;
-  date: string | null;
-}) {
+function DayView({ report, date }: { report: TReport; date: string | null }) {
   const data = useMemo(() => {
     if (!date) return null;
     const events = report.events.filter((e) => e.date === date);
@@ -836,11 +840,36 @@ function DayView({
       {hasEvents ? (
         <>
           <div className="stats">
-            <StatTile className="glow-cyan" icon="⬆️" value={String(data.byType.commit)} label="Commits" />
-            <StatTile className="glow-violet" icon="🔀" value={String(data.byType.pullRequest)} label="Pull requests" />
-            <StatTile className="glow-amber" icon="🐛" value={String(data.byType.issue)} label="Issues" />
-            <StatTile className="glow-green" icon="👀" value={String(data.byType.review)} label="Reviews" />
-            <StatTile className="glow-magenta" icon="📦" value={String(data.repoBars.length)} label="Projects touched" />
+            <StatTile
+              className="glow-cyan"
+              icon="⬆️"
+              value={String(data.byType.commit)}
+              label="Commits"
+            />
+            <StatTile
+              className="glow-violet"
+              icon="🔀"
+              value={String(data.byType.pullRequest)}
+              label="Pull requests"
+            />
+            <StatTile
+              className="glow-amber"
+              icon="🐛"
+              value={String(data.byType.issue)}
+              label="Issues"
+            />
+            <StatTile
+              className="glow-green"
+              icon="👀"
+              value={String(data.byType.review)}
+              label="Reviews"
+            />
+            <StatTile
+              className="glow-magenta"
+              icon="📦"
+              value={String(data.repoBars.length)}
+              label="Projects touched"
+            />
           </div>
 
           <div className="grid">
@@ -874,4 +903,3 @@ function DayView({
     </>
   );
 }
-
