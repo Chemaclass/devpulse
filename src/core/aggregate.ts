@@ -25,7 +25,7 @@ export function buildReport(args: {
   events: TActivityEvent[];
   notes?: string[];
   languages?: TLanguageStat[];
-  yearStats?: TYearStats;
+  yearStats?: TYearStats | undefined;
 }): TReport {
   const { profile, calendar, events } = args;
   const notes = [...(args.notes ?? [])];
@@ -100,7 +100,7 @@ export function buildReport(args: {
     byRepo,
     byType,
     languages,
-    yearStats: args.yearStats,
+    ...(args.yearStats ? { yearStats: args.yearStats } : {}),
     window: { from, to, days },
     notes,
   };

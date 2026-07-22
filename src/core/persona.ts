@@ -63,7 +63,7 @@ function chronotype(hour: number): { emoji: string; label: string } {
 }
 
 const indexOfMax = (a: number[]) =>
-  a.reduce((best, v, i) => (v > a[best] ? i : best), 0);
+  a.reduce((best, v, i) => (v > (a[best] ?? -Infinity) ? i : best), 0);
 
 /**
  * Peak hour of day from the detailed events feed. This is the only source
@@ -92,10 +92,10 @@ type TWeekdayProfile = {
 function weekdayProfileFromCalendar(days: TCalendarDay[]): TWeekdayProfile {
   const buckets = weekdayBuckets(days);
   const total = buckets.reduce((s, n) => s + n, 0);
-  const weekend = buckets[0] + buckets[6];
+  const weekend = (buckets[0] ?? 0) + (buckets[6] ?? 0);
   const fd = indexOfMax(buckets);
   return {
-    favWeekday: buckets[fd] > 0 ? fd : null,
+    favWeekday: (buckets[fd] ?? 0) > 0 ? fd : null,
     weekendShare: total ? weekend / total : 0,
   };
 }
@@ -219,7 +219,7 @@ export function derivePersona(report: TReport): TPersona {
     traits.push({
       icon: "📆",
       label: "Favorite day",
-      value: WEEKDAY_NAMES[favWeekday],
+      value: WEEKDAY_NAMES[favWeekday] ?? "",
     });
     traits.push({
       icon: weekendShare >= 0.3 ? "🏖️" : "💼",
@@ -235,7 +235,7 @@ export function derivePersona(report: TReport): TPersona {
     traits.push({
       icon: "🗓️",
       label: "Peak month",
-      value: MONTH_NAMES[peakMonth],
+      value: MONTH_NAMES[peakMonth] ?? "",
     });
   }
 

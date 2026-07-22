@@ -73,7 +73,7 @@ function useChartColors() {
 function barScales(
   tickColor: string,
   gridColor: string,
-): ChartOptions<"bar">["scales"] {
+): NonNullable<ChartOptions<"bar">["scales"]> {
   return {
     x: { ticks: { color: tickColor }, grid: { display: false } },
     y: {
@@ -87,7 +87,7 @@ function barScales(
 function radarScales(
   tickColor: string,
   gridColor: string,
-): ChartOptions<"radar">["scales"] {
+): NonNullable<ChartOptions<"radar">["scales"]> {
   return {
     r: {
       angleLines: { color: gridColor },

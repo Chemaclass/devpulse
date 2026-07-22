@@ -494,7 +494,8 @@ function Dashboard({
 
   // Resolve the active day for "latest" / "date" modes.
   const latestActive = useMemo(() => {
-    if (report.byDay.length) return report.byDay[0].date;
+    const mostRecent = report.byDay[0];
+    if (mostRecent) return mostRecent.date;
     const active = [...calendar.days].reverse().find((d) => d.count > 0);
     return active?.date ?? null;
   }, [report, calendar]);

@@ -120,6 +120,7 @@ export function computeStreaks(
   let current = 0;
   for (let i = days.length - 1; i >= 0; i--) {
     const d = days[i];
+    if (!d) continue;
     if (d.count > 0) {
       current += 1;
     } else if (d.date >= today) {
