@@ -1,7 +1,12 @@
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useMemo, useState } from "react";
-import * as THREE from "three";
+import {
+  Color,
+  ConeGeometry,
+  CylinderGeometry,
+  MeshStandardMaterial,
+} from "three";
 import { parseUTCDate, todayISO } from "../../core/dates.js";
 import { TCalendarDay } from "../../core/types.js";
 import { useTheme } from "../theme.js";
@@ -66,20 +71,20 @@ function Forest({
 }) {
   // Unit geometries scaled per tree, so everything is shared (5 foliage
   // materials + 1 trunk material, two geometries total).
-  const coneGeo = useMemo(() => new THREE.ConeGeometry(1, 1, 7), []);
+  const coneGeo = useMemo(() => new ConeGeometry(1, 1, 7), []);
   const trunkGeo = useMemo(
-    () => new THREE.CylinderGeometry(0.08, 0.11, 1, 6),
+    () => new CylinderGeometry(0.08, 0.11, 1, 6),
     [],
   );
   const foliageMats = useMemo(
     () =>
       colors.map(
         (c, i) =>
-          new THREE.MeshStandardMaterial({
+          new MeshStandardMaterial({
             color: c,
             roughness: 0.78,
             metalness: 0,
-            emissive: new THREE.Color(c),
+            emissive: new Color(c),
             emissiveIntensity: i >= 3 ? 0.22 : 0.04,
             flatShading: true,
           }),
@@ -87,7 +92,7 @@ function Forest({
     [colors],
   );
   const trunkMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: TRUNK_COLOR, roughness: 0.9 }),
+    () => new MeshStandardMaterial({ color: TRUNK_COLOR, roughness: 0.9 }),
     [],
   );
 
