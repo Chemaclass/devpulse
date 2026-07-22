@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prepare": "simple-git-hooks || true",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "report": "tsx src/cli/index.ts",
@@ -24,6 +25,18 @@
     "node": ">=20"
   },
   "packageManager": "npm@11.14.1",
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged && npm run typecheck"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,html,json}": [
+      "prettier --write"
+    ]
+  },
   "keywords": [
     "github",
     "stats",
@@ -58,8 +71,10 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.7.0",
     "knip": "^6.29.0",
+    "lint-staged": "^16.4.0",
     "madge": "^8.0.0",
     "prettier": "^3.9.6",
+    "simple-git-hooks": "^2.13.1",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0",
     "typescript-eslint": "^8.65.0",
