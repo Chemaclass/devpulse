@@ -24,12 +24,10 @@ export default defineConfig({
         // its chunk still loads on demand, never on first paint.
         manualChunks(id) {
           if (id.includes("/node_modules/three/")) return "vendor-three";
-          if (
-            id.includes("/node_modules/chart.js/") ||
-            id.includes("/node_modules/react-chartjs-2/")
-          ) {
-            return "vendor-charts";
-          }
+          // Only chart.js (React-free). react-chartjs-2 pulls React in, so
+          // pinning it would drag React into this chunk and force it eager;
+          // the small wrapper rides the lazy Charts chunk instead.
+          if (id.includes("/node_modules/chart.js/")) return "vendor-charts";
         },
       },
     },
