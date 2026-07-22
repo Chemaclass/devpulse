@@ -10,7 +10,7 @@ type TArgs = {
   json: boolean;
   md: boolean;
   help: boolean;
-}
+};
 
 function parseArgs(argv: string[]): TArgs {
   const args: TArgs = {
@@ -76,7 +76,9 @@ async function main() {
   } catch (err) {
     process.stdout.write("\n");
     if (err instanceof GitHubError && err.kind === "rate_limited") {
-      console.error("✗ Rate limited by GitHub's public API. Try again in a bit.");
+      console.error(
+        "✗ Rate limited by GitHub's public API. Try again in a bit.",
+      );
     } else {
       console.error(`✗ ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -101,9 +103,13 @@ async function main() {
 
   const c = report.calendar;
   console.log("");
-  console.log(`  ${report.profile.name ?? username} (@${report.profile.login})`);
+  console.log(
+    `  ${report.profile.name ?? username} (@${report.profile.login})`,
+  );
   console.log(`  All-time contributions: ${c.total.toLocaleString()}`);
-  console.log(`  Current streak: ${c.currentStreak}d · Longest: ${c.longestStreak}d`);
+  console.log(
+    `  Current streak: ${c.currentStreak}d · Longest: ${c.longestStreak}d`,
+  );
   console.log(
     `  Recent (events): ${report.byType.commit} commits · ${report.byType.pullRequest} PRs · ${report.byType.issue} issues · ${report.byType.review} reviews`,
   );

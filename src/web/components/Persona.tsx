@@ -4,7 +4,7 @@ import { Icon } from "./Icon.js";
 type TProps = {
   persona: TPersona;
   login: string;
-}
+};
 
 export function Persona({ persona, login }: TProps) {
   return (

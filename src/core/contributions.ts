@@ -9,7 +9,7 @@ const CALENDAR_API = "https://github-contributions-api.jogruber.de/v4";
 type TJogruberResponse = {
   total: Record<string, number>;
   contributions: Array<{ date: string; count: number; level: number }>;
-}
+};
 
 /**
  * Fetch the full contribution calendar (all years) for a user.
@@ -32,7 +32,11 @@ export async function fetchCalendar(
   }
 
   if (res.status === 404) {
-    throw new GitHubError(`No GitHub user named "${username}".`, 404, "not_found");
+    throw new GitHubError(
+      `No GitHub user named "${username}".`,
+      404,
+      "not_found",
+    );
   }
   if (!res.ok) {
     throw new GitHubError(

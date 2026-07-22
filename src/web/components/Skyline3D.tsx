@@ -23,7 +23,7 @@ type TProps = {
   scaleMax?: number;
   /** Optional 5-step color ramp (level 0..4). Defaults to forest green. */
   colors?: string[];
-}
+};
 
 // Forest-green ramp, matching the 2D heatmap levels.
 const LEVEL_COLORS = ["#243a1f", "#2f5138", "#46824f", "#6fae5f", "#a7d98a"];
@@ -35,7 +35,7 @@ type TTree = {
   level: number;
   col: number;
   row: number;
-}
+};
 
 function buildTrees(days: TCalendarDay[], window: number): TTree[] {
   const today = todayISO();
@@ -72,10 +72,7 @@ function Forest({
   // Unit geometries scaled per tree, so everything is shared (5 foliage
   // materials + 1 trunk material, two geometries total).
   const coneGeo = useMemo(() => new ConeGeometry(1, 1, 7), []);
-  const trunkGeo = useMemo(
-    () => new CylinderGeometry(0.08, 0.11, 1, 6),
-    [],
-  );
+  const trunkGeo = useMemo(() => new CylinderGeometry(0.08, 0.11, 1, 6), []);
   const foliageMats = useMemo(
     () =>
       colors.map(
@@ -199,7 +196,10 @@ export function Skyline3D({
       >
         <color attach="background" args={[bgColor]} />
         <ambientLight intensity={light ? 0.85 : 0.6} />
-        <directionalLight position={[18, 30, 12]} intensity={light ? 1.3 : 1.1} />
+        <directionalLight
+          position={[18, 30, 12]}
+          intensity={light ? 1.3 : 1.1}
+        />
         <directionalLight position={[-20, 14, -10]} intensity={0.35} />
         <Ground numWeeks={numWeeks} color={groundColor} />
         <Forest

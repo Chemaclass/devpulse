@@ -44,8 +44,7 @@ export function TokenControl() {
           <p className="tp-title">Optional GitHub token</p>
           <p className="tp-note">
             Unlocks a higher rate limit and real per-repo history from the last
-            year. Kept only in this browser tab and sent only to
-            api.github.com.
+            year. Kept only in this browser tab and sent only to api.github.com.
           </p>
           <input
             type="password"

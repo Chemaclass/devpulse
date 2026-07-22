@@ -1,5 +1,10 @@
 import { readCachedResponse, writeCachedResponse } from "./httpCache.js";
-import { TActivityEvent, GitHubError, TLanguageStat, TProfile } from "./types.js";
+import {
+  TActivityEvent,
+  GitHubError,
+  TLanguageStat,
+  TProfile,
+} from "./types.js";
 
 const API = "https://api.github.com";
 
@@ -94,10 +99,18 @@ export async function fetchProfile(
     fetchImpl,
   );
   if (res.status === 404) {
-    throw new GitHubError(`No GitHub user named "${username}".`, 404, "not_found");
+    throw new GitHubError(
+      `No GitHub user named "${username}".`,
+      404,
+      "not_found",
+    );
   }
   if (!res.ok) {
-    throw new GitHubError(`GitHub error (${res.status}).`, res.status, "unknown");
+    throw new GitHubError(
+      `GitHub error (${res.status}).`,
+      res.status,
+      "unknown",
+    );
   }
   const u = (await res.json()) as TRawUser;
   return {
@@ -135,7 +148,11 @@ export async function fetchPublicEvents(
       fetchImpl,
     );
     if (res.status === 404) {
-      throw new GitHubError(`No GitHub user named "${username}".`, 404, "not_found");
+      throw new GitHubError(
+        `No GitHub user named "${username}".`,
+        404,
+        "not_found",
+      );
     }
     if (!res.ok) break;
     const batch = (await res.json()) as TRawEvent[];
@@ -161,7 +178,7 @@ type TRawRepo = {
   fork: boolean;
   language: string | null;
   stargazers_count: number;
-}
+};
 
 /**
  * Aggregate the primary language across a user's public, non-fork repos.
@@ -236,7 +253,7 @@ export type TRawEvent = {
   created_at: string;
   repo: { name: string };
   payload: TRawEventPayload;
-}
+};
 
 /** Normalize one raw GitHub event into a TActivityEvent (or null to skip). */
 export function parseEvent(ev: TRawEvent): TActivityEvent | null {
@@ -266,7 +283,14 @@ export function parseEvent(ev: TRawEvent): TActivityEvent | null {
         counted > 0
           ? `Pushed ${counted} commit${counted === 1 ? "" : "s"}${branch ? ` to ${branch}` : ""}`
           : `Pushed to ${branch || "a branch"}`;
-      return { ...base, type: "commit", weight, action: "pushed", title, url: repoUrl };
+      return {
+        ...base,
+        type: "commit",
+        weight,
+        action: "pushed",
+        title,
+        url: repoUrl,
+      };
     }
     case "PullRequestEvent": {
       const action = String(ev.payload.action ?? "");
@@ -314,7 +338,8 @@ export function parseEvent(ev: TRawEvent): TActivityEvent | null {
         type: "other",
         weight: 1,
         action: "commented",
-        title: `Commented on #${issue.number ?? ""}: ${issue.title ?? ""}`.trim(),
+        title:
+          `Commented on #${issue.number ?? ""}: ${issue.title ?? ""}`.trim(),
         url: issue.html_url ?? repoUrl,
       };
     }

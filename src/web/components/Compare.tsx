@@ -14,7 +14,7 @@ type TProps = {
   onExit: () => void;
   /** Open one contender as their own dedicated DevPulse report. */
   onView: (login: string) => void;
-}
+};
 
 // Contender colors carried everywhere: stats, bars and the 3D cities.
 const A_ACCENT = "#6fae5f"; // leaf green
@@ -33,7 +33,7 @@ function trait(p: TPersona, label: string): string | undefined {
 type TFact = {
   icon: string;
   text: string;
-}
+};
 
 /** Punchy comparative facts, computed and filtered to the interesting ones. */
 function funFacts(a: TReport, b: TReport, pa: TPersona, pb: TPersona): TFact[] {
@@ -134,7 +134,7 @@ type TMetric = {
   label: string;
   a: number;
   b: number;
-}
+};
 
 export function Compare({ a, b, onExit, onView }: TProps) {
   const personaA = derivePersona(a);
@@ -142,13 +142,37 @@ export function Compare({ a, b, onExit, onView }: TProps) {
   const scaleMax = Math.max(1, busiestDay(a), busiestDay(b));
 
   const metrics: TMetric[] = [
-    { label: "All-time contributions", a: a.calendar.total, b: b.calendar.total },
-    { label: "Current streak", a: a.calendar.currentStreak, b: b.calendar.currentStreak },
-    { label: "Longest streak", a: a.calendar.longestStreak, b: b.calendar.longestStreak },
-    { label: "Active days", a: a.calendar.activeDays, b: b.calendar.activeDays },
-    { label: "Best day", a: a.calendar.bestDay?.count ?? 0, b: b.calendar.bestDay?.count ?? 0 },
+    {
+      label: "All-time contributions",
+      a: a.calendar.total,
+      b: b.calendar.total,
+    },
+    {
+      label: "Current streak",
+      a: a.calendar.currentStreak,
+      b: b.calendar.currentStreak,
+    },
+    {
+      label: "Longest streak",
+      a: a.calendar.longestStreak,
+      b: b.calendar.longestStreak,
+    },
+    {
+      label: "Active days",
+      a: a.calendar.activeDays,
+      b: b.calendar.activeDays,
+    },
+    {
+      label: "Best day",
+      a: a.calendar.bestDay?.count ?? 0,
+      b: b.calendar.bestDay?.count ?? 0,
+    },
     { label: "Followers", a: a.profile.followers, b: b.profile.followers },
-    { label: "Public repos", a: a.profile.publicRepos, b: b.profile.publicRepos },
+    {
+      label: "Public repos",
+      a: a.profile.publicRepos,
+      b: b.profile.publicRepos,
+    },
   ];
 
   const aWins = metrics.filter((m) => m.a > m.b).length;
@@ -272,11 +296,17 @@ export function Compare({ a, b, onExit, onView }: TProps) {
           return (
             <div className="vs-metric" key={m.label}>
               <div className="vm-top">
-                <span className={`vm-val${aWin ? " win" : ""}`} style={{ color: A_ACCENT }}>
+                <span
+                  className={`vm-val${aWin ? " win" : ""}`}
+                  style={{ color: A_ACCENT }}
+                >
                   <CountUp value={m.a.toLocaleString()} />
                 </span>
                 <span className="vm-label">{m.label}</span>
-                <span className={`vm-val${bWin ? " win" : ""}`} style={{ color: B_ACCENT }}>
+                <span
+                  className={`vm-val${bWin ? " win" : ""}`}
+                  style={{ color: B_ACCENT }}
+                >
                   <CountUp value={m.b.toLocaleString()} />
                 </span>
               </div>
@@ -301,8 +331,18 @@ export function Compare({ a, b, onExit, onView }: TProps) {
           <h3>Contribution personality</h3>
           <div style={{ height: 280 }}>
             <TypeRadarCompare
-              a={{ label: `@${a.profile.login}`, byType: a.byType, color: A_ACCENT, fill: A_FILL }}
-              b={{ label: `@${b.profile.login}`, byType: b.byType, color: B_ACCENT, fill: B_FILL }}
+              a={{
+                label: `@${a.profile.login}`,
+                byType: a.byType,
+                color: A_ACCENT,
+                fill: A_FILL,
+              }}
+              b={{
+                label: `@${b.profile.login}`,
+                byType: b.byType,
+                color: B_ACCENT,
+                fill: B_FILL,
+              }}
             />
           </div>
         </div>
@@ -310,8 +350,16 @@ export function Compare({ a, b, onExit, onView }: TProps) {
           <h3>Contributions by year</h3>
           <div style={{ height: 280 }}>
             <YearBarsCompare
-              a={{ label: `@${a.profile.login}`, totalByYear: a.calendar.totalByYear, color: A_ACCENT }}
-              b={{ label: `@${b.profile.login}`, totalByYear: b.calendar.totalByYear, color: B_ACCENT }}
+              a={{
+                label: `@${a.profile.login}`,
+                totalByYear: a.calendar.totalByYear,
+                color: A_ACCENT,
+              }}
+              b={{
+                label: `@${b.profile.login}`,
+                totalByYear: b.calendar.totalByYear,
+                color: B_ACCENT,
+              }}
             />
           </div>
         </div>
@@ -325,7 +373,9 @@ export function Compare({ a, b, onExit, onView }: TProps) {
               <h3 style={{ color: accent }}>@{r.profile.login}</h3>
             </div>
             <Suspense
-              fallback={<div className="skyline-loading muted">Rendering 3D…</div>}
+              fallback={
+                <div className="skyline-loading muted">Rendering 3D…</div>
+              }
             >
               <Skyline3D
                 days={r.calendar.days}

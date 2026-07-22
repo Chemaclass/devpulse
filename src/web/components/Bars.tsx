@@ -2,7 +2,7 @@ export type TBarDatum = {
   name: string;
   value: number;
   href?: string;
-}
+};
 
 export function Bars({ data, max }: { data: TBarDatum[]; max?: number }) {
   const top = max ?? Math.max(1, ...data.map((d) => d.value));

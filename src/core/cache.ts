@@ -16,7 +16,7 @@ const PREFIX = "devpulse-report:";
 type TEntry = {
   report: TReport;
   expires: number;
-}
+};
 
 // Minimal storage shape, so core stays free of the DOM lib while still using
 // sessionStorage when it exists (the browser); in Node it is simply absent.
@@ -26,7 +26,7 @@ type TKeyValueStore = {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
-}
+};
 
 const memory = new Map<string, TEntry>();
 

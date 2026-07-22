@@ -1,11 +1,7 @@
 // Shared domain types used by both the web app and the Node CLI.
 
 export type TContributionType =
-  | "commit"
-  | "pullRequest"
-  | "issue"
-  | "review"
-  | "other";
+  "commit" | "pullRequest" | "issue" | "review" | "other";
 
 export const CONTRIBUTION_TYPES: TContributionType[] = [
   "commit",
@@ -139,10 +135,7 @@ export class GitHubError extends Error {
     message: string,
     public readonly status?: number,
     public readonly kind:
-      | "not_found"
-      | "rate_limited"
-      | "network"
-      | "unknown" = "unknown",
+      "not_found" | "rate_limited" | "network" | "unknown" = "unknown",
   ) {
     super(message);
     this.name = "GitHubError";

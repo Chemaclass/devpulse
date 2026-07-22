@@ -15,12 +15,12 @@ const PREFIX = "devpulse-etag:";
 type TCachedResponse = {
   etag: string;
   body: string;
-}
+};
 
 type TKeyValueStore = {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
-}
+};
 
 const memory = new Map<string, TCachedResponse>();
 
@@ -51,7 +51,11 @@ export function readCachedResponse(url: string): TCachedResponse | null {
   }
 }
 
-export function writeCachedResponse(url: string, etag: string, body: string): void {
+export function writeCachedResponse(
+  url: string,
+  etag: string,
+  body: string,
+): void {
   const entry: TCachedResponse = { etag, body };
   memory.set(url, entry);
 
