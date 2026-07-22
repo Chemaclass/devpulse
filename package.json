@@ -51,7 +51,7 @@
   "author": "Chemaclass",
   "license": "MIT",
   "dependencies": {
-    "@react-three/drei": "^9.122.0",
+    "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^8.18.0",
     "chart.js": "^4.4.3",
     "lucide-react": "^0.460.0",
