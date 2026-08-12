@@ -149,7 +149,13 @@ export function App() {
   const [pendingVs, setPendingVs] = useState<string | null>(null);
   const { token } = useToken();
 
-  async function run(raw: string) {
+  /**
+   * Load a profile. A fresh search drops any running comparison, but a
+   * deep-linked one (?vs=) is handed in so it survives in the URL until it
+   * has actually loaded — otherwise re-reading the URL, as the effect below
+   * does on re-mount and on back/forward, would find the comparison gone.
+   */
+  async function run(raw: string, keepVs: string | null = null) {
     const username = parseUsername(raw);
     if (!username) return;
     syncUrl(username);
@@ -160,7 +166,7 @@ export function App() {
     setSelectedDate(null);
     setVsReport(null);
     setVsError(null);
-    setQueryParam("vs", null);
+    setQueryParam("vs", keepVs);
     try {
       const r = await getReport(username, apiFetch, token);
       setReport(r);
@@ -244,10 +250,11 @@ export function App() {
         : params.get("mode") === "latest"
           ? "latest"
           : "overall";
+      const vs = params.get("vs");
       setQuery(u);
       setPendingView({ mode: m, date: d });
-      setPendingVs(params.get("vs"));
-      run(u);
+      setPendingVs(vs);
+      run(u, vs);
     };
     load();
     window.addEventListener("popstate", load);

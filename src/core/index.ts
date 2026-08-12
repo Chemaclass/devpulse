@@ -44,9 +44,14 @@ export async function getReport(
   // GitHub REST calls (api.github.com) — never to the calendar proxy.
   const ghFetch = authToken ? withAuth(fetchImpl, authToken) : fetchImpl;
 
-  const [profile, calendar, eventsResult, languages] = await Promise.all([
-    fetchProfile(clean, ghFetch),
-    fetchCalendar(clean, fetchImpl), // third-party proxy: never tokenized
+  // The profile comes first: the calendar is fetched year by year, and the
+  // account creation year is what bounds that range (see fetchCalendar). It
+  // also fails fast — and cheaply — on an unknown username.
+  const profile = await fetchProfile(clean, ghFetch);
+
+  const [calendar, eventsResult, languages] = await Promise.all([
+    // third-party proxy: never tokenized
+    fetchCalendar(clean, fetchImpl, accountYear(profile.createdAt)),
     fetchPublicEvents(clean, ghFetch),
     fetchTopLanguages(clean, ghFetch),
   ]);
@@ -74,6 +79,15 @@ export async function getReport(
   });
   writeReport(cacheKey, report, now);
   return report;
+}
+
+/**
+ * Year the account was created, or undefined when GitHub sent no usable
+ * timestamp — in which case the calendar falls back to its own lower bound.
+ */
+function accountYear(createdAt: string): number | undefined {
+  const year = new Date(createdAt).getUTCFullYear();
+  return Number.isFinite(year) ? year : undefined;
 }
 
 /**
