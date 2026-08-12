@@ -105,6 +105,14 @@ export type TCalendarSummary = {
   bestDay: TCalendarDay | null;
   activeDays: number;
   averagePerActiveDay: number;
+  /**
+   * Years of history the contributions service refused to serve. The trailing
+   * twelve months always load, so a calendar with missing years still has a
+   * usable recent window — but its totals and streaks only span what arrived.
+   */
+  missingYears: number[];
+  /** True when every year since the account was created is covered. */
+  complete: boolean;
 };
 
 export type TReport = {

@@ -53,8 +53,27 @@ describe("fetchCalendar", () => {
     };
   }
 
+  /** The trailing-twelve-months payload, keyed the way the service keys it. */
+  function lastPayload(dates: string[], count = 1) {
+    return {
+      total: { lastYear: dates.length * count },
+      contributions: dates.map((date) => ({ date, count, level: 1 })),
+    };
+  }
+
   function ok(body: unknown): Response {
     return new Response(JSON.stringify(body), { status: 200 });
+  }
+
+  /** Route by the `y=` parameter, the way the service is actually driven. */
+  function router(
+    handler: (window: string, calls: number) => Response,
+  ): ReturnType<typeof vi.fn> {
+    let calls = 0;
+    return vi.fn(async (url: string | URL | Request) => {
+      calls += 1;
+      return handler(String(url).match(/y=([^&]+)/)?.[1] ?? "", calls);
+    });
   }
 
   /** Freeze "today" so the fetched year range is deterministic. */
@@ -63,11 +82,43 @@ describe("fetchCalendar", () => {
     vi.setSystemTime(new Date(TODAY + "T12:00:00Z"));
   }
 
-  it("requests one year at a time and merges the years", async () => {
+  it("asks for the trailing window and every year of history", async () => {
     freezeToday();
-    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
-      const year = Number(String(url).match(/y=(\d+)/)?.[1]);
-      return ok(yearPayload(year, year === 2024 ? 3 : 1));
+    const fetchImpl = router((window) =>
+      window === "last"
+        ? ok(lastPayload(["2026-03-01"]))
+        : ok(yearPayload(Number(window), Number(window) === 2024 ? 3 : 1)),
+    );
+
+    const summary = await fetchCalendar(
+      "chemaclass",
+      fetchImpl as unknown as typeof fetch,
+      2024,
+    );
+
+    const asked = fetchImpl.mock.calls.map(
+      (c: unknown[]) => String(c[0]).match(/y=([^&]+)/)?.[1],
+    );
+    expect(asked.sort()).toEqual(["2024", "2025", "2026", "last"]);
+    expect(summary.days.map((d) => d.date)).toEqual([
+      "2024-03-01",
+      "2025-03-01",
+      "2026-03-01",
+    ]);
+    expect(summary.total).toBe(5);
+    // "lastYear" is dropped: only real calendar years belong on a year chart.
+    expect(summary.totalByYear).toEqual({ "2024": 3, "2025": 1, "2026": 1 });
+    expect(summary.complete).toBe(true);
+    expect(summary.missingYears).toEqual([]);
+    vi.useRealTimers();
+  });
+
+  it("keeps the recent window when a year cannot be scraped", async () => {
+    freezeToday();
+    const fetchImpl = router((window) => {
+      if (window === "last") return ok(lastPayload(["2026-03-01"], 7));
+      if (window === "2026") return ok(yearPayload(2026, 7));
+      return new Response('{"error":"other side closed"}', { status: 500 });
     });
 
     const summary = await fetchCalendar(
@@ -76,25 +127,33 @@ describe("fetchCalendar", () => {
       2024,
     );
 
-    expect(fetchImpl).toHaveBeenCalledTimes(3); // 2024, 2025, 2026
-    expect(String(fetchImpl.mock.calls[0]?.[0])).toContain("chemaclass?y=2024");
-    expect(summary.days.map((d) => d.date)).toEqual([
-      "2024-03-01",
-      "2025-03-01",
-      "2026-03-01",
-    ]);
-    expect(summary.total).toBe(5);
-    expect(summary.totalByYear).toEqual({ "2024": 3, "2025": 1, "2026": 1 });
+    expect(summary.total).toBe(7);
+    expect(summary.days.map((d) => d.date)).toEqual(["2026-03-01"]);
+    expect(summary.missingYears).toEqual([2024, 2025]);
+    expect(summary.complete).toBe(false);
     vi.useRealTimers();
   });
 
-  it("retries a year the service answers with a 5xx", async () => {
+  // Exhausts the backbone's full retry budget (~7s of backoff) on purpose.
+  it("fails only when the trailing window itself cannot be fetched", async () => {
     freezeToday();
-    let calls = 0;
-    const fetchImpl = vi.fn(async () => {
-      calls += 1;
+    const fetchImpl = router(
+      () => new Response('{"error":"other side closed"}', { status: 500 }),
+    ) as unknown as typeof fetch;
+
+    await expect(fetchCalendar("chemaclass", fetchImpl, 2026)).rejects.toThrow(
+      /Contributions service error \(500\)/,
+    );
+    vi.useRealTimers();
+  }, 15_000);
+
+  it("retries a window the service answers with a 5xx", async () => {
+    freezeToday();
+    const fetchImpl = router((window, calls) => {
       if (calls === 1) return new Response("nope", { status: 500 });
-      return ok(yearPayload(2026, 4));
+      return window === "last"
+        ? ok(lastPayload(["2026-03-01"], 4))
+        : ok(yearPayload(2026, 4));
     });
 
     const summary = await fetchCalendar(
@@ -103,23 +162,23 @@ describe("fetchCalendar", () => {
       2026,
     );
 
-    expect(calls).toBe(2);
     expect(summary.total).toBe(4);
+    expect(summary.complete).toBe(true);
     vi.useRealTimers();
   });
 
   it("waits out a 429 for as long as the window says", async () => {
     freezeToday();
-    let calls = 0;
-    const fetchImpl = vi.fn(async () => {
-      calls += 1;
+    const fetchImpl = router((window, calls) => {
       if (calls === 1) {
         return new Response("slow down", {
           status: 429,
           headers: { ratelimit: '"10-in-10sec"; r=0; t=1' },
         });
       }
-      return ok(yearPayload(2026, 2));
+      return window === "last"
+        ? ok(lastPayload(["2026-03-01"], 2))
+        : ok(yearPayload(2026, 2));
     });
 
     const started = Date.now();
@@ -129,23 +188,23 @@ describe("fetchCalendar", () => {
       2026,
     );
 
-    expect(calls).toBe(2);
     expect(summary.total).toBe(2);
-    // The 1s window, not the ~0.5s backoff a plain 5xx would have used.
+    // The 1s window, not the sub-second backoff a plain 5xx would have used.
     expect(Date.now() - started).toBeGreaterThanOrEqual(1000);
     vi.useRealTimers();
   });
 
   it("reports an unknown user without retrying", async () => {
     freezeToday();
-    const fetchImpl = vi.fn(
-      async () => new Response("{}", { status: 404 }),
-    ) as unknown as typeof fetch;
+    const fetchImpl = vi.fn(async () => new Response("{}", { status: 404 }));
 
-    await expect(fetchCalendar("nobody", fetchImpl, 2026)).rejects.toThrow(
-      GitHubError,
-    );
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    await expect(
+      fetchCalendar("nobody", fetchImpl as unknown as typeof fetch, 2026),
+    ).rejects.toThrow(GitHubError);
+
+    // A 404 is final: each window is asked once and never asked again.
+    const asked = fetchImpl.mock.calls.map((c: unknown[]) => String(c[0]));
+    expect(asked).toHaveLength(new Set(asked).size);
     vi.useRealTimers();
   });
 });

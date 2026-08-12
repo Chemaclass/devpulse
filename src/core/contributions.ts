@@ -9,28 +9,35 @@ const CALENDAR_API = "https://github-contributions-api.jogruber.de/v4";
 /** GitHub launched in 2008, so no account's calendar starts before it. */
 const FIRST_GITHUB_YEAR = 2008;
 
-// The upstream scrapes github.com for a year it has not cached yet, and that
-// scrape times out often enough ({"error":"other side closed"}, 5xx) that a
-// retry is part of the normal path. A failed attempt caches nothing, so the
-// retry is a fresh scrape rather than a cheap replay.
+// The upstream scrapes github.com for anything it has not cached yet, and that
+// scrape fails often enough ({"error":"other side closed"}, 5xx) that a retry
+// is part of the normal path. A failed attempt caches nothing, so the retry is
+// a fresh scrape rather than a cheap replay.
 const MAX_SCRAPE_ATTEMPTS = 4;
-const RETRY_BASE_MS = 500;
-const MAX_RETRY_MS = 2_000;
+const RETRY_BASE_MS = 700;
+const MAX_RETRY_MS = 3_000;
 
-// Uncached years are also rate-limited (10-in-10sec, announced in a `ratelimit`
-// header whose `t` counts the seconds left in the window). Cached years are
-// exempt, so rather than pace every request — which would punish the common
-// case of an already-warm profile — the limit is simply obeyed when it is hit.
-// Being throttled is a wait rather than a failure, so it gets its own budget:
-// a year is only given up on when the service keeps throttling it for minutes.
-const MAX_THROTTLE_WAITS = 5;
+// Uncached responses are also rate-limited (10-in-10sec, announced in a
+// `ratelimit` header whose `t` counts the seconds left in the window). Cached
+// ones are exempt, so rather than pace every request — which would punish the
+// common case of an already-warm profile — the limit is obeyed when it is hit.
+// Being throttled is a wait rather than a failure, so it gets its own budget.
+const MAX_THROTTLE_WAITS = 4;
 const RATE_LIMIT_WINDOW_MS = 10_000;
 const MAX_RATE_LIMIT_WAIT_MS = 15_000;
 
-// Years are fetched in a batch this wide. The upstream fails cold scrapes at
-// about the same rate however slowly they are asked for, so a narrower batch
-// buys no reliability — only a longer wait.
-const MAX_PARALLEL_YEARS = 8;
+// Historical years are fetched in a batch this wide, under a shared deadline.
+// Year-scoped queries are the service's weak spot — during a bad spell a cold
+// year can fail every attempt for half a minute — so the history is given a
+// bounded slice of time and the report is built from whatever arrives.
+const MAX_PARALLEL_YEARS = 4;
+const HISTORY_BUDGET_MS = 7_000;
+const MAX_HISTORY_ATTEMPTS = 2;
+
+// The trailing window is the one part that cannot be skipped, so it gets a far
+// longer leash — but still a bounded one, so a service that only throttles can
+// never hold a page in its loading state indefinitely.
+const RECENT_BUDGET_MS = 15_000;
 
 type TJogruberResponse = {
   total: Record<string, number>;
@@ -38,13 +45,17 @@ type TJogruberResponse = {
 };
 
 /**
- * Fetch the full contribution calendar for a user, one request per year from
- * `sinceYear` (the account creation year) to the current one, and merge them
- * into a single day series.
+ * Fetch the contribution calendar for a user.
  *
- * The upstream's `y=all` shortcut is not used: fetching every year in one
- * request consistently exceeds its scrape budget and answers 500 for every
- * username, so the range is walked explicitly instead.
+ * The service is asked for the trailing twelve months first (`y=last`), which
+ * is the one query it answers dependably, then for each year of the account's
+ * history. The history is best-effort: year-scoped queries are the part of the
+ * service that breaks, and a profile that renders its recent activity beats one
+ * that shows an error because 2016 could not be scraped. Whatever is missing is
+ * reported in `missingYears` so the numbers can be labelled for what they are.
+ *
+ * The `y=all` shortcut is never used: it asks for every year in one scrape and
+ * answers 500 for every username.
  */
 export async function fetchCalendar(
   username: string,
@@ -57,54 +68,111 @@ export async function fetchCalendar(
     currentYear,
   );
 
+  // Requests share a gate: the first 429 parks the rest until the window
+  // resets, instead of each discovering the same limit for itself.
+  const gate: TThrottleGate = { openAt: 0 };
+
   const years: number[] = [];
   for (let year = firstYear; year <= currentYear; year++) years.push(year);
 
-  // One throttled year means the whole batch is throttled, so the years share
-  // a gate: the first 429 parks every other request until the window resets,
-  // instead of each year discovering the same limit for itself.
-  const gate: TThrottleGate = { openAt: 0 };
-  const pages = await mapWithConcurrency(years, MAX_PARALLEL_YEARS, (year) =>
-    fetchCalendarYear(username, year, fetchImpl, gate),
+  // History runs alongside the trailing window rather than after it, so a slow
+  // backbone does not push the whole fetch past its budget. Each year swallows
+  // its own failure, so this promise never rejects on its own.
+  const deadline = Date.now() + HISTORY_BUDGET_MS;
+  const historyPending = mapWithConcurrency(years, MAX_PARALLEL_YEARS, (year) =>
+    fetchCalendarWindow(
+      username,
+      String(year),
+      fetchImpl,
+      gate,
+      MAX_HISTORY_ATTEMPTS,
+      deadline,
+    ).catch(() => null),
   );
 
-  const days: TCalendarDay[] = [];
-  const totalByYear: Record<string, number> = {};
-  for (const page of pages) {
-    for (const d of page.contributions ?? []) {
-      days.push({ date: d.date, count: d.count, level: d.level });
-    }
-    for (const [year, total] of Object.entries(page.total ?? {})) {
-      totalByYear[year] = total;
-    }
-  }
-  days.sort((a, b) => a.date.localeCompare(b.date));
+  const recent = await fetchCalendarWindow(
+    username,
+    "last",
+    fetchImpl,
+    gate,
+    MAX_SCRAPE_ATTEMPTS,
+    Date.now() + RECENT_BUDGET_MS,
+  );
+  const history = await historyPending;
 
-  return summarizeCalendar(days, totalByYear);
+  // Keyed by date so the two sources merge cleanly: a full year supersedes the
+  // trailing window wherever they overlap, and the window fills the rest.
+  const byDate = new Map<string, TCalendarDay>();
+  for (const d of recent.contributions ?? []) byDate.set(d.date, { ...d });
+
+  const totalByYear: Record<string, number> = {};
+  const unscraped: number[] = [];
+  history.forEach((page, i) => {
+    const year = years[i] as number;
+    if (!page) {
+      unscraped.push(year);
+      return;
+    }
+    for (const d of page.contributions ?? []) byDate.set(d.date, { ...d });
+    // Only calendar years: the trailing window reports itself as "lastYear",
+    // which would show up as a bogus column on a per-year chart.
+    for (const [key, total] of Object.entries(page.total ?? {})) {
+      if (/^\d{4}$/.test(key)) totalByYear[key] = total;
+    }
+  });
+
+  const days = [...byDate.values()].sort((a, b) =>
+    a.date.localeCompare(b.date),
+  );
+
+  // The trailing window reaches back past January, so the current year is
+  // covered in full even when its own scrape failed — count it as present and
+  // total it from the days rather than reporting a gap the data doesn't have.
+  const today = todayISO();
+  const missingYears = unscraped.filter((year) => {
+    const covered =
+      byDate.has(`${year}-01-01`) &&
+      byDate.has(year === currentYear ? today : `${year}-12-31`);
+    if (!covered) return true;
+    totalByYear[String(year)] = days
+      .filter((d) => d.date.startsWith(String(year)))
+      .reduce((sum, d) => sum + d.count, 0);
+    return false;
+  });
+
+  return summarizeCalendar(days, totalByYear, missingYears);
 }
 
 /** Shared "not before this timestamp" barrier for a batch of year requests. */
 type TThrottleGate = { openAt: number };
 
 /**
- * One year of the calendar. Failed scrapes are retried with a short backoff;
- * being throttled parks the whole batch until the rate-limit window reopens
- * and does not spend a scrape attempt, since nothing was actually tried.
+ * One window of the calendar — a calendar year, or "last" for the trailing
+ * twelve months. Failed scrapes are retried with a backoff; being throttled
+ * parks the whole batch until the rate-limit window reopens and does not spend
+ * a scrape attempt, since nothing was actually tried. Passing a `deadline`
+ * caps the total wait, giving up rather than holding the report back.
  */
-async function fetchCalendarYear(
+async function fetchCalendarWindow(
   username: string,
-  year: number,
+  window: string,
   fetchImpl: typeof fetch,
   gate: TThrottleGate,
+  maxAttempts: number,
+  deadline?: number,
 ): Promise<TJogruberResponse> {
-  const url = `${CALENDAR_API}/${encodeURIComponent(username)}?y=${year}`;
+  const url = `${CALENDAR_API}/${encodeURIComponent(username)}?y=${window}`;
   let lastError: GitHubError | null = null;
   let backoff = RETRY_BASE_MS;
   let scrapes = 0;
   let throttles = 0;
 
-  while (scrapes < MAX_SCRAPE_ATTEMPTS && throttles <= MAX_THROTTLE_WAITS) {
+  const expired = () => deadline !== undefined && Date.now() >= deadline;
+
+  while (scrapes < maxAttempts && throttles <= MAX_THROTTLE_WAITS) {
+    if (expired()) break;
     await waitForGate(gate);
+    if (expired()) break;
 
     let res: Response;
     try {
@@ -217,6 +285,7 @@ function sleep(ms: number): Promise<void> {
 export function summarizeCalendar(
   days: TCalendarDay[],
   totalByYear: Record<string, number>,
+  missingYears: number[] = [],
 ): TCalendarSummary {
   const total = days.reduce((s, d) => s + d.count, 0);
   const activeDays = days.filter((d) => d.count > 0).length;
@@ -237,6 +306,8 @@ export function summarizeCalendar(
     bestDay,
     activeDays,
     averagePerActiveDay: activeDays ? total / activeDays : 0,
+    missingYears,
+    complete: missingYears.length === 0,
   };
 }
 

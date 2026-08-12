@@ -648,7 +648,11 @@ function OverallView({
           className="glow-cyan"
           icon="🔥"
           value={calendar.total.toLocaleString()}
-          label="All-time contributions"
+          label={
+            calendar.complete
+              ? "All-time contributions"
+              : "Contributions (partial history)"
+          }
         />
         <StatTile
           className="glow-amber"

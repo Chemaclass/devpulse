@@ -49,7 +49,9 @@ function personaSection(report: TReport): string[] {
 
 function allTimeSection(calendar: TCalendarSummary): string[] {
   const lines = [
-    `## All-time contributions`,
+    calendar.complete
+      ? `## All-time contributions`
+      : `## Contributions (partial history)`,
     "",
     `- **Total contributions:** ${calendar.total.toLocaleString()}`,
     `- **Active days:** ${calendar.activeDays.toLocaleString()}`,
@@ -60,6 +62,12 @@ function allTimeSection(calendar: TCalendarSummary): string[] {
   if (calendar.bestDay) {
     lines.push(
       `- **Best day:** ${calendar.bestDay.date} (${calendar.bestDay.count} contributions)`,
+    );
+  }
+  if (!calendar.complete) {
+    lines.push(
+      "",
+      `> The contributions service did not return ${calendar.missingYears.join(", ")}, so these figures cover ${calendar.days[0]?.date ?? "part of the history"} onwards.`,
     );
   }
   lines.push("");

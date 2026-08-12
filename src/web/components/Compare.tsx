@@ -55,9 +55,14 @@ function funFacts(a: TReport, b: TReport, pa: TPersona, pb: TPersona): TFact[] {
   const hiT = Math.max(at, bt);
   const loT = Math.min(at, bt);
   if (loT > 0 && hiT / loT >= 1.5) {
+    // Only claim "all-time" when both calendars actually span all of it.
+    const span =
+      a.calendar.complete && b.calendar.complete
+        ? "the all-time contributions"
+        : "the contributions";
     out.push({
       icon: "🔥",
-      text: `@${hi.profile.login} has ${(hiT / loT).toFixed(1)}× the all-time contributions of @${lo.profile.login}.`,
+      text: `@${hi.profile.login} has ${(hiT / loT).toFixed(1)}× ${span} of @${lo.profile.login}.`,
     });
   }
 
@@ -143,7 +148,13 @@ export function Compare({ a, b, onExit, onView }: TProps) {
 
   const metrics: TMetric[] = [
     {
-      label: "All-time contributions",
+      // Either side missing years makes this a comparison of unequal spans;
+      // say so rather than calling it all-time (the profile view carries the
+      // note explaining which years the service withheld).
+      label:
+        a.calendar.complete && b.calendar.complete
+          ? "All-time contributions"
+          : "Contributions (partial history)",
       a: a.calendar.total,
       b: b.calendar.total,
     },

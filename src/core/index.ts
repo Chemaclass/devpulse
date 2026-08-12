@@ -63,6 +63,11 @@ export async function getReport(
     : undefined;
 
   const notes = [...eventsResult.notes];
+  if (!calendar.complete) {
+    notes.push(
+      `The contributions service could not return ${describeYears(calendar.missingYears)} right now, so every calendar figure on this page — totals, streaks, active days — skips ${calendar.missingYears.length === 1 ? "that year" : "those years"}. Reloading in a few minutes usually fills the gap.`,
+    );
+  }
   if (authToken && !yearStats) {
     notes.push(
       "A token was provided but the GraphQL year stats could not be loaded. Check the token is valid and can read contributions.",
@@ -79,6 +84,13 @@ export async function getReport(
   });
   writeReport(cacheKey, report, now);
   return report;
+}
+
+/** "2016", "2016 and 2017", or "2016, 2017 and 2019". */
+function describeYears(years: number[]): string {
+  const list = years.map(String);
+  if (list.length <= 1) return list[0] ?? "some years";
+  return `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
 }
 
 /**

@@ -106,7 +106,11 @@ async function main() {
   console.log(
     `  ${report.profile.name ?? username} (@${report.profile.login})`,
   );
-  console.log(`  All-time contributions: ${c.total.toLocaleString()}`);
+  console.log(
+    c.complete
+      ? `  All-time contributions: ${c.total.toLocaleString()}`
+      : `  Contributions (partial history): ${c.total.toLocaleString()}`,
+  );
   console.log(
     `  Current streak: ${c.currentStreak}d · Longest: ${c.longestStreak}d`,
   );
