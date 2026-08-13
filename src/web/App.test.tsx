@@ -15,7 +15,9 @@ import { App } from "./App.js";
 import { ThemeProvider } from "./theme.js";
 import { TokenProvider } from "./token.js";
 
-// The 3D view needs WebGL, which jsdom has no answer for.
+// The 3D view needs a WebGL context jsdom cannot provide, and three.js throws
+// when it cannot get one. (The charts have the same problem for their own
+// reasons; they are swapped out for every test in vitest.config.ts.)
 vi.mock("./components/Skyline3D.js", () => ({
   Skyline3D: () => null,
 }));
