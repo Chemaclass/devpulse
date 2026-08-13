@@ -888,6 +888,10 @@ a:hover {
   overflow: hidden;
 }
 .bar-fill {
+  /* A span is inline by default, and width, height and transform do not apply
+     to inline boxes — the fill rendered 0x0, leaving every row showing an
+     empty track. The track itself escapes this by being a grid item. */
+  display: block;
   height: 100%;
   border-radius: 3px;
   background: linear-gradient(90deg, var(--green), var(--cyan));

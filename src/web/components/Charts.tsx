@@ -61,11 +61,15 @@ function useChartColors() {
         tickColor: "#9aa489",
         gridColor: "rgba(150,165,120,0.12)",
         sliceBorder: "rgba(15,19,16,0.6)",
+        // Days known only to the calendar: deliberately quieter than the typed
+        // series, but still solid enough to read against the panel it sits on.
+        calendarColor: "rgba(150,165,120,0.35)",
       }
     : {
         tickColor: "#5f6b50",
         gridColor: "rgba(70,90,50,0.14)",
         sliceBorder: "rgba(255,255,255,0.75)",
+        calendarColor: "rgba(112,128,86,0.55)",
       };
 }
 
@@ -98,7 +102,6 @@ function radarScales(
   };
 }
 
-const CALENDAR_COLOR = "rgba(150,165,120,0.35)";
 const DEFAULT_DAYS = 30;
 
 /**
@@ -117,7 +120,7 @@ export const DailyChart = memo(function DailyChart({
   days: TCalendarDay[];
   lookback?: number;
 }) {
-  const { tickColor, gridColor } = useChartColors();
+  const { tickColor, gridColor, calendarColor } = useChartColors();
   const data = useMemo(() => {
     const today = todayISO();
     const window = days.filter((d) => d.date <= today).slice(-lookback);
@@ -148,13 +151,13 @@ export const DailyChart = memo(function DailyChart({
         {
           label: "Calendar",
           data: calendarRemainder,
-          backgroundColor: CALENDAR_COLOR,
+          backgroundColor: calendarColor,
           borderRadius: 2,
           stack: "s",
         },
       ],
     };
-  }, [byDay, days, lookback]);
+  }, [byDay, days, lookback, calendarColor]);
 
   return (
     <Bar
