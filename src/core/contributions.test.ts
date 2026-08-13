@@ -227,6 +227,28 @@ describe("fetchCalendar", () => {
     vi.useRealTimers();
   });
 
+  it("leaves nothing unhandled when the year bound never arrives", async () => {
+    freezeToday();
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+
+    // The caller's profile lookup fails, so the year bound rejects while the
+    // trailing window — started before it, deliberately — is still in flight.
+    const fetchImpl = router(
+      () => new Response("bad request", { status: 400 }),
+    ) as unknown as typeof fetch;
+    const sinceYear = Promise.reject(new Error("no profile"));
+
+    await expect(
+      fetchCalendar("chemaclass", fetchImpl, sinceYear),
+    ).rejects.toThrow(/no profile/);
+    await new Promise((r) => setTimeout(r, 50));
+
+    process.off("unhandledRejection", unhandled);
+    expect(unhandled).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
   it("reports an unknown user without retrying", async () => {
     freezeToday();
     const fetchImpl = vi.fn(async () => new Response("{}", { status: 404 }));

@@ -29,13 +29,13 @@ export default defineConfig({
       include: ["src/core/**"],
       exclude: ["src/**/*.test.{ts,tsx}"],
       // Floors set just below current core coverage so regressions fail but
-      // the gate is stable. Network-orchestration files (index/graphql) are
-      // intentionally light until fetch-fixture integration tests are added.
+      // the gate is stable. Raised once the network layer (github/graphql/
+      // index) got fetch-stubbed tests of its own.
       thresholds: {
-        lines: 55,
-        statements: 55,
-        branches: 60,
-        functions: 75,
+        lines: 82,
+        statements: 82,
+        branches: 74,
+        functions: 86,
       },
     },
   },

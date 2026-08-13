@@ -1,4 +1,5 @@
 import { parseUTCDate, todayISO } from "./dates.js";
+import { quiet } from "./promise.js";
 import { TCalendarDay, TCalendarSummary, GitHubError } from "./types.js";
 
 // Public, CORS-enabled proxy that exposes the GitHub contribution calendar
@@ -72,13 +73,17 @@ export async function fetchCalendar(
   // The trailing window needs no year bound, so it goes out immediately —
   // ahead of `sinceYear`, which a caller may still be fetching (it comes from
   // the account's creation date). Only the history has to wait for it.
-  const recentPending = fetchCalendarWindow(
-    username,
-    "last",
-    fetchImpl,
-    gate,
-    MAX_SCRAPE_ATTEMPTS,
-    Date.now() + RECENT_BUDGET_MS,
+  // Quiet, because the `await` below can throw first and leave this one
+  // in flight with nobody listening for its failure.
+  const recentPending = quiet(
+    fetchCalendarWindow(
+      username,
+      "last",
+      fetchImpl,
+      gate,
+      MAX_SCRAPE_ATTEMPTS,
+      Date.now() + RECENT_BUDGET_MS,
+    ),
   );
 
   const firstYear = Math.min(

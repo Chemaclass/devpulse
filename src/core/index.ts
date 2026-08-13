@@ -1,6 +1,7 @@
 import { buildReport } from "./aggregate.js";
 import { PARTIAL_TTL_MS, TTL_MS, readReport, writeReport } from "./cache.js";
 import { fetchCalendar } from "./contributions.js";
+import { quiet } from "./promise.js";
 import { fetchYearStats } from "./graphql.js";
 import {
   fetchProfile,
@@ -139,20 +140,6 @@ export async function getReport(
     calendar.complete ? TTL_MS : PARTIAL_TTL_MS,
   );
   return report;
-}
-
-/**
- * Mark a promise as one whose rejection is dealt with elsewhere.
- *
- * These fetches all run at once, so the first failure ends the request while
- * its siblings are still in flight; without a handler attached up front, those
- * siblings' rejections surface as unhandled errors in the console (and in any
- * error reporter listening for them). Attaching one does not consume the
- * rejection — whoever awaits the promise later still sees it.
- */
-function quiet<T>(promise: Promise<T>): Promise<T> {
-  promise.catch(() => {});
-  return promise;
 }
 
 /** "2016", "2016 and 2017", or "2016, 2017 and 2019". */
