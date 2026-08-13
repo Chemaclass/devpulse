@@ -136,7 +136,14 @@ export function App() {
   const [query, setQuery] = useState("");
   const [report, setReport] = useState<TReport | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // The message plus what to offer about it: a spent rate limit is fixable
+  // right here with a token, an ordinary failure is worth simply retrying.
+  const [error, setError] = useState<{
+    message: string;
+    rateLimited: boolean;
+    /** The username that failed, so retrying does not depend on the input. */
+    username: string;
+  } | null>(null);
   const [mode, setMode] = useState<TMode>("overall");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   // A view (mode + day) read from the URL, applied once the report loads.
@@ -153,7 +160,7 @@ export function App() {
   const [provisional, setProvisional] = useState(false);
   // Identifies the newest run, so a slower earlier one cannot overwrite it.
   const runId = useRef(0);
-  const { token } = useToken();
+  const { token, setPanelOpen } = useToken();
 
   /**
    * Load a profile. A fresh search drops any running comparison, but a
@@ -161,7 +168,11 @@ export function App() {
    * has actually loaded — otherwise re-reading the URL, as the effect below
    * does on re-mount and on back/forward, would find the comparison gone.
    */
-  async function run(raw: string, keepVs: string | null = null) {
+  async function run(
+    raw: string,
+    keepVs: string | null = null,
+    { refresh = false }: { refresh?: boolean } = {},
+  ) {
     const username = parseUsername(raw);
     if (!username) return;
     const id = ++runId.current;
@@ -180,24 +191,31 @@ export function App() {
     try {
       // The interim report puts a profile on screen as soon as the recent
       // window is in; the full one replaces it when the history arrives.
-      const r = await getReport(username, apiFetch, token, (partial) => {
-        if (!current()) return;
-        setReport(partial);
-        setProvisional(true);
-        setLoading(false);
+      const r = await getReport(username, apiFetch, token, {
+        refresh,
+        onPartial: (partial) => {
+          if (!current()) return;
+          setReport(partial);
+          setProvisional(true);
+          setLoading(false);
+        },
       });
       if (!current()) return;
       setReport(r);
       trackProfileView(r.profile.login);
     } catch (err) {
       if (!current()) return;
-      if (err instanceof GitHubError && err.kind === "rate_limited") {
-        setError(
-          "GitHub's public API rate limit was hit (60 req/hour per IP). Please try again in a little while.",
-        );
-      } else {
-        setError(err instanceof Error ? err.message : String(err));
-      }
+      const rateLimited =
+        err instanceof GitHubError && err.kind === "rate_limited";
+      setError({
+        username,
+        rateLimited,
+        message: rateLimited
+          ? "GitHub allows 60 requests an hour per IP without a token, and this one is spent."
+          : err instanceof Error
+            ? err.message
+            : String(err),
+      });
     } finally {
       if (current()) {
         setProvisional(false);
@@ -382,9 +400,28 @@ export function App() {
       {loading && <Skeleton />}
 
       {error && !loading && (
-        <div className="card error">
+        <div className="card error" role="alert">
           <h3>Couldn't load that profile</h3>
-          <p className="muted">{error}</p>
+          <p className="muted">{error.message}</p>
+          <div className="error-actions">
+            <button
+              className="share-btn"
+              onClick={() => run(error.username, null, { refresh: true })}
+            >
+              <Icon glyph="↻" /> Try again
+            </button>
+            {error.rateLimited && (
+              <button className="share-btn" onClick={() => setPanelOpen(true)}>
+                <Icon glyph="🔑" /> Add a token
+              </button>
+            )}
+          </div>
+          {error.rateLimited && (
+            <p className="muted tp-note">
+              A personal token lifts the limit to 5,000 requests an hour. It
+              stays in this browser tab and is only ever sent to GitHub.
+            </p>
+          )}
         </div>
       )}
 
@@ -408,6 +445,7 @@ export function App() {
         <Dashboard
           report={report}
           provisional={provisional}
+          onRetry={() => run(report.profile.login, null, { refresh: true })}
           mode={mode}
           setMode={setMode}
           selectedDate={selectedDate}
@@ -428,7 +466,7 @@ export function App() {
           <a href="https://docs.github.com/en/rest/activity/events">
             events API
           </a>
-          . No tokens, nothing stored.
+          . No token required, nothing stored.
         </p>
         <p>
           Built by{" "}
@@ -495,6 +533,7 @@ function CompareBar({
 function Dashboard({
   report,
   provisional,
+  onRetry,
   mode,
   setMode,
   selectedDate,
@@ -506,6 +545,8 @@ function Dashboard({
   report: TReport;
   /** The interim report is showing: some sections are still arriving. */
   provisional: boolean;
+  /** Fetch the whole report again, ignoring what is cached. */
+  onRetry: () => void;
   mode: TMode;
   setMode: (m: TMode) => void;
   selectedDate: string | null;
@@ -631,6 +672,16 @@ function Dashboard({
           <Icon glyph="ℹ️" /> {n}
         </p>
       ))}
+
+      {/* The gap is usually a passing upstream failure, so offer the retry
+          here instead of asking the reader to reload the page themselves. */}
+      {!provisional && !calendar.complete && (
+        <p className="note note-action">
+          <button className="share-btn" onClick={onRetry}>
+            <Icon glyph="↻" /> Try the missing years again
+          </button>
+        </p>
+      )}
     </>
   );
 }

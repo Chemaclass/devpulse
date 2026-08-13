@@ -13,7 +13,19 @@ const STORAGE_KEY = "devpulse-token";
 const TokenContext = createContext<{
   token: string;
   setToken: (t: string) => void;
-}>({ token: "", setToken: () => {} });
+  /**
+   * Whether the token panel is open. Held here rather than inside the control
+   * so anything that runs into the rate limit — an error card, say — can send
+   * the reader straight to the setting that lifts it.
+   */
+  panelOpen: boolean;
+  setPanelOpen: (open: boolean) => void;
+}>({
+  token: "",
+  setToken: () => {},
+  panelOpen: false,
+  setPanelOpen: () => {},
+});
 
 function initialToken(): string {
   try {
@@ -25,6 +37,7 @@ function initialToken(): string {
 
 export function TokenProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string>(initialToken);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -36,7 +49,9 @@ export function TokenProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   return (
-    <TokenContext.Provider value={{ token, setToken: setTokenState }}>
+    <TokenContext.Provider
+      value={{ token, setToken: setTokenState, panelOpen, setPanelOpen }}
+    >
       {children}
     </TokenContext.Provider>
   );

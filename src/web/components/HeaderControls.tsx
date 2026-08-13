@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDismiss } from "../lib/useDismiss.js";
 import { useTheme } from "../theme.js";
 import { useToken } from "../token.js";
@@ -20,20 +20,27 @@ export function ThemeToggle() {
 }
 
 export function TokenControl() {
-  const { token, setToken } = useToken();
-  const [open, setOpen] = useState(false);
+  const {
+    token,
+    setToken,
+    panelOpen: open,
+    setPanelOpen: setOpen,
+  } = useToken();
   const [draft, setDraft] = useState(token);
   const wrapRef = useRef<HTMLDivElement>(null);
   useDismiss(wrapRef, open, () => setOpen(false));
+
+  // The panel can also be opened from elsewhere (the rate-limit error), which
+  // skips the button below that would otherwise seed the draft.
+  useEffect(() => {
+    if (open) setDraft(token);
+  }, [open, token]);
 
   return (
     <div className="token-control" ref={wrapRef}>
       <button
         className="token-btn"
-        onClick={() => {
-          setDraft(token);
-          setOpen((o) => !o);
-        }}
+        onClick={() => setOpen(!open)}
         title={token ? "GitHub token set" : "Add a GitHub token (optional)"}
         aria-label="GitHub token settings"
       >

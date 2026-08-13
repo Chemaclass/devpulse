@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -101,8 +101,8 @@ describe("App", () => {
 
     let finish: (r: TReport) => void = () => {};
     mockGetReport.mockImplementationOnce(
-      (_u: string, _f?: unknown, _t?: unknown, onPartial?: unknown) => {
-        (onPartial as (r: TReport) => void)(interim);
+      (_u: string, _f?: unknown, _t?: unknown, options?: unknown) => {
+        (options as { onPartial: (r: TReport) => void }).onPartial(interim);
         return new Promise<TReport>((resolve) => {
           finish = resolve;
         });
@@ -131,6 +131,51 @@ describe("App", () => {
     expect(
       await screen.findByText("9,999", {}, { timeout: 3000 }),
     ).toBeVisible();
+  });
+
+  it("offers a way out of a spent rate limit", async () => {
+    mockGetReport.mockRejectedValue(
+      new GitHubError("rate limited", 403, "rate_limited"),
+    );
+    renderApp();
+    await userEvent.setup().type(searchBox(), "torvalds{Enter}");
+
+    const card = (await screen.findByRole("alert")) as HTMLElement;
+    expect(card).toHaveTextContent(/60 requests an hour/);
+
+    // The token panel is the fix for this particular failure, so the card
+    // opens it rather than leaving the reader to find the key icon. (The
+    // header has its own token button, hence scoping the query to the card.)
+    await userEvent
+      .setup()
+      .click(within(card).getByRole("button", { name: /token/i }));
+    expect(screen.getByPlaceholderText("ghp_…")).toBeInTheDocument();
+  });
+
+  it("retries the username that failed, not whatever is in the box", async () => {
+    mockGetReport.mockRejectedValueOnce(
+      new GitHubError("boom", 500, "unknown"),
+    );
+    renderApp();
+    const user = userEvent.setup();
+    await user.type(searchBox(), "torvalds{Enter}");
+    await screen.findByRole("alert");
+
+    // The reader starts typing someone else before hitting retry.
+    await user.clear(searchBox());
+    await user.type(searchBox(), "someone-else");
+
+    mockGetReport.mockResolvedValueOnce(
+      reportFixture({ total: 1_200, complete: true }),
+    );
+    await user.click(screen.getByRole("button", { name: /try again/i }));
+
+    expect(mockGetReport).toHaveBeenLastCalledWith(
+      "torvalds",
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ refresh: true }),
+    );
   });
 
   it("surfaces a friendly error when the lookup fails", async () => {

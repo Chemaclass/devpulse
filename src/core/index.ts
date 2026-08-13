@@ -27,11 +27,21 @@ export type { TPersona } from "./persona.js";
  * still outstanding. Callers that render it get a profile on screen seconds
  * before the full report resolves; ignoring it simply waits for the whole thing.
  */
+export type TReportOptions = {
+  onPartial?: (report: TReport) => void;
+  /**
+   * Ignore any cached copy and fetch afresh. For an explicit retry: a report
+   * degraded by a bad minute upstream is cached too, and re-asking for it
+   * would otherwise hand back the same gaps it is being retried for.
+   */
+  refresh?: boolean;
+};
+
 export async function getReport(
   username: string,
   fetchImpl: typeof fetch = fetch,
   token?: string,
-  onPartial?: (report: TReport) => void,
+  { onPartial, refresh }: TReportOptions = {},
 ): Promise<TReport> {
   const clean = username.trim().replace(/^@/, "");
   if (!/^[a-zA-Z0-9-]{1,39}$/.test(clean)) {
@@ -45,7 +55,7 @@ export async function getReport(
     authToken ? "t" + fingerprint(authToken) : "anon"
   }`;
   const now = Date.now();
-  const cached = readReport(cacheKey, now);
+  const cached = refresh ? null : readReport(cacheKey, now);
   if (cached) return cached;
 
   // A token raises the rate limit and unlocks GraphQL. It is attached ONLY to
@@ -116,7 +126,7 @@ export async function getReport(
   const notes = [...eventsResult.notes];
   if (!calendar.complete) {
     notes.push(
-      `The contributions service could not return ${describeYears(calendar.missingYears)} right now, so every calendar figure on this page — totals, streaks, active days — skips ${calendar.missingYears.length === 1 ? "that year" : "those years"}. Reloading in a few minutes usually fills the gap.`,
+      `The contributions service could not return ${describeYears(calendar.missingYears)} right now, so every calendar figure here — totals, streaks, active days — skips ${calendar.missingYears.length === 1 ? "that year" : "those years"}. It usually recovers within a few minutes.`,
     );
   }
   if (authToken && !yearStats) {
@@ -142,11 +152,25 @@ export async function getReport(
   return report;
 }
 
-/** "2016", "2016 and 2017", or "2016, 2017 and 2019". */
-function describeYears(years: number[]): string {
-  const list = years.map(String);
-  if (list.length <= 1) return list[0] ?? "some years";
-  return `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
+/**
+ * Name a set of years the way a person would: "2016", "2016–2019", or
+ * "2016–2019 and 2021". A degraded service usually withholds a long unbroken
+ * stretch, and spelling out thirteen of them one by one reads as noise.
+ */
+export function describeYears(years: number[]): string {
+  const runs: Array<[number, number]> = [];
+  for (const year of [...years].sort((a, b) => a - b)) {
+    const last = runs[runs.length - 1];
+    if (last && year === last[1] + 1) last[1] = year;
+    else runs.push([year, year]);
+  }
+
+  const parts = runs.map(([from, to]) =>
+    from === to ? `${from}` : `${from}\u2013${to}`,
+  );
+  if (parts.length === 0) return "some years";
+  if (parts.length === 1) return parts[0] as string;
+  return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
 /**

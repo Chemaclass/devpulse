@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearReportCache } from "./cache.js";
-import { getReport } from "./index.js";
+import { describeYears, getReport } from "./index.js";
 import { TReport } from "./types.js";
 
 /** A fetch that answers each endpoint the report is assembled from. */
@@ -54,12 +54,27 @@ describe("getReport", () => {
 
   it("hands over an interim report before the full one", async () => {
     const seen: TReport[] = [];
-    const report = await getReport("someone", routedFetch(), undefined, (r) =>
-      seen.push(r),
-    );
+    const report = await getReport("someone", routedFetch(), undefined, {
+      onPartial: (r) => seen.push(r),
+    });
     expect(seen).toHaveLength(1);
     expect(seen[0]?.profile.login).toBe("someone");
     expect(report.calendar.total).toBe(3);
+  });
+
+  it("serves the cached report until asked for a fresh one", async () => {
+    const fetchImpl = vi.fn(routedFetch());
+
+    await getReport("cacheable", fetchImpl);
+    const callsAfterFirst = fetchImpl.mock.calls.length;
+
+    await getReport("cacheable", fetchImpl);
+    expect(fetchImpl.mock.calls.length).toBe(callsAfterFirst);
+
+    // An explicit retry has to reach past the cache, or a report degraded by
+    // a passing upstream failure would just be handed back unchanged.
+    await getReport("cacheable", fetchImpl, undefined, { refresh: true });
+    expect(fetchImpl.mock.calls.length).toBeGreaterThan(callsAfterFirst);
   });
 
   it("rejects a username that cannot be a GitHub login", async () => {
@@ -90,5 +105,25 @@ describe("getReport", () => {
 
     process.off("unhandledRejection", unhandled);
     expect(unhandled).not.toHaveBeenCalled();
+  });
+});
+
+describe("describeYears", () => {
+  it("collapses a run into a range", () => {
+    expect(describeYears([2013, 2014, 2015, 2016])).toBe("2013\u20132016");
+  });
+
+  it("keeps separate runs apart", () => {
+    expect(describeYears([2013, 2014, 2016, 2019, 2020])).toBe(
+      "2013\u20132014, 2016 and 2019\u20132020",
+    );
+  });
+
+  it("names a single year plainly", () => {
+    expect(describeYears([2021])).toBe("2021");
+  });
+
+  it("sorts before grouping, so call order does not matter", () => {
+    expect(describeYears([2016, 2014, 2015])).toBe("2014\u20132016");
   });
 });
