@@ -133,6 +133,29 @@ describe("App", () => {
     ).toBeVisible();
   });
 
+  it("keeps a deep-linked day while the report is still loading", async () => {
+    window.history.replaceState(null, "", "/?u=torvalds&d=2019-03-14");
+    let finish: (r: TReport) => void = () => {};
+    mockGetReport.mockImplementationOnce(
+      () =>
+        new Promise<TReport>((resolve) => {
+          finish = resolve;
+        }),
+    );
+
+    renderApp();
+
+    // The view state still reads "overall" at this point, and writing that to
+    // the URL would strip the ?d= that has not been applied yet.
+    expect(window.location.search).toContain("d=2019-03-14");
+
+    finish(reportFixture({ total: 1_200, complete: true }));
+    expect(
+      await screen.findByRole("heading", { name: /March 14, 2019/ }),
+    ).toBeInTheDocument();
+    expect(window.location.search).toContain("d=2019-03-14");
+  });
+
   it("offers a way out of a spent rate limit", async () => {
     mockGetReport.mockRejectedValue(
       new GitHubError("rate limited", 403, "rate_limited"),

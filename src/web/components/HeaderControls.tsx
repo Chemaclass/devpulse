@@ -28,12 +28,17 @@ export function TokenControl() {
   } = useToken();
   const [draft, setDraft] = useState(token);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   useDismiss(wrapRef, open, () => setOpen(false));
 
-  // The panel can also be opened from elsewhere (the rate-limit error), which
-  // skips the button below that would otherwise seed the draft.
+  // The panel can also be opened from elsewhere on the page (the rate-limit
+  // error card), which skips the button below that would otherwise seed the
+  // draft. Focusing the field also brings the panel into view, so opening it
+  // from halfway down the page does not leave the reader looking at nothing.
   useEffect(() => {
-    if (open) setDraft(token);
+    if (!open) return;
+    setDraft(token);
+    inputRef.current?.focus({ preventScroll: false });
   }, [open, token]);
 
   return (
@@ -54,6 +59,7 @@ export function TokenControl() {
             year. Kept only in this browser tab and sent only to api.github.com.
           </p>
           <input
+            ref={inputRef}
             type="password"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}

@@ -154,11 +154,16 @@ export function App() {
   } | null>(null);
   const [mode, setMode] = useState<TMode>("overall");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  // A view (mode + day) read from the URL, applied once the report loads.
+  // A view (mode + day) read from the URL, applied once the report loads. The
+  // ref mirrors it for the URL-sync effect below, which runs in the same commit
+  // as the read and would otherwise still see the state as empty.
   const [pendingView, setPendingView] = useState<{
     mode: TMode;
     date: string | null;
   } | null>(null);
+  const pendingViewRef = useRef<{ mode: TMode; date: string | null } | null>(
+    null,
+  );
   // Second user for side-by-side comparison.
   const [vsReport, setVsReport] = useState<TReport | null>(null);
   const [vsLoading, setVsLoading] = useState(false);
@@ -168,6 +173,7 @@ export function App() {
   const [provisional, setProvisional] = useState(false);
   // Identifies the newest run, so a slower earlier one cannot overwrite it.
   const runId = useRef(0);
+  const vsRunId = useRef(0);
   const { token, setPanelOpen } = useToken();
 
   /**
@@ -235,23 +241,30 @@ export function App() {
   async function runVs(raw: string) {
     const username = parseUsername(raw);
     if (!username) return;
+    // Comparisons get the same guard as the main lookup: two in quick
+    // succession must not let the slower one land on top of the newer.
+    const id = ++vsRunId.current;
+    const current = () => vsRunId.current === id;
+
     setVsLoading(true);
     setVsError(null);
     try {
       const r = await getReport(username, apiFetch, token);
+      if (!current()) return;
       setVsReport(r);
       setQueryParam("vs", r.profile.login);
       trackProfileView(r.profile.login, "compare");
     } catch (err) {
+      if (!current()) return;
       setVsError(
         err instanceof GitHubError && err.kind === "rate_limited"
-          ? "GitHub rate limit hit. Try again in a little while."
+          ? "GitHub's hourly limit is spent — a token in the key menu lifts it."
           : err instanceof Error
             ? err.message
             : String(err),
       );
     } finally {
-      setVsLoading(false);
+      if (current()) setVsLoading(false);
     }
   }
 
@@ -300,6 +313,7 @@ export function App() {
           : "overall";
       const vs = params.get("vs");
       setQuery(u);
+      pendingViewRef.current = { mode: m, date: d };
       setPendingView({ mode: m, date: d });
       setPendingVs(vs);
       run(u, vs);
@@ -315,6 +329,7 @@ export function App() {
     if (report && pendingView) {
       setMode(pendingView.mode);
       setSelectedDate(pendingView.date);
+      pendingViewRef.current = null;
       setPendingView(null);
     }
   }, [report, pendingView]);
@@ -328,11 +343,16 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [report, pendingVs]);
 
-  // Keep the URL in sync with the current view (mode + selected day).
+  // Keep the URL in sync with the current view (mode + selected day). Held
+  // back while a deep-linked view is still waiting for its report: the state
+  // says "overall" until then, and writing that out would strip the ?d= or
+  // ?mode= that is about to be applied — losing it for anything that re-reads
+  // the URL first (a re-mount, or back/forward).
   useEffect(() => {
+    if (pendingViewRef.current) return;
     setQueryParam("d", mode === "date" ? selectedDate : null);
     setQueryParam("mode", mode === "latest" ? "latest" : null);
-  }, [mode, selectedDate]);
+  }, [mode, selectedDate, pendingView]);
 
   return (
     <div className="shell">
