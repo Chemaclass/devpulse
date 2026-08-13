@@ -23,6 +23,7 @@ import { StatTile } from "./components/StatTile.js";
 import { trackProfileView } from "./lib/cronitor.js";
 import { apiFetch } from "./lib/githubFetch.js";
 import { setQueryParam, syncUrl } from "./lib/url.js";
+import { supportsWebGL } from "./lib/webgl.js";
 import { useDismiss } from "./lib/useDismiss.js";
 import { useToken } from "./token.js";
 
@@ -665,7 +666,10 @@ function OverallView({
     : repoBars;
 
   const persona = useMemo(() => derivePersona(report), [report]);
-  const [view, setView] = useState<"3d" | "grid">("3d");
+  // Default to the 3D view only where it can actually draw; the boundary
+  // below still covers a context that is lost or refused later on.
+  const canRender3D = supportsWebGL();
+  const [view, setView] = useState<"3d" | "grid">(canRender3D ? "3d" : "grid");
 
   return (
     <>
@@ -714,6 +718,10 @@ function OverallView({
             <button
               className={view === "3d" ? "active" : ""}
               onClick={() => setView("3d")}
+              disabled={!canRender3D}
+              title={
+                canRender3D ? undefined : "This browser has no WebGL support"
+              }
             >
               3D
             </button>
@@ -726,10 +734,9 @@ function OverallView({
           </div>
         </div>
         {view === "3d" ? (
-          // The 3D view needs a WebGL context, and three.js throws during
-          // render when it cannot get one. Without a boundary that throw
-          // unmounts the entire report, so a machine with no GPU sees a blank
-          // page instead of a profile: catch it and fall back to the grid.
+          // three.js throws during render when it loses or cannot get a
+          // context. Without a boundary that throw unmounts the entire report,
+          // leaving a blank page instead of a profile.
           <ErrorBoundary
             fallback={<Heatmap days={calendar.days} onSelect={onPickDay} />}
             onError={() => setView("grid")}

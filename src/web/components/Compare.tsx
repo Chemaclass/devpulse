@@ -2,8 +2,10 @@ import { Suspense, useState } from "react";
 import { derivePersona, TPersona, TReport } from "../../core/index.js";
 import { TypeRadarCompare, YearBarsCompare } from "./Charts.js";
 import { CountUp } from "./CountUp.js";
+import { ErrorBoundary } from "./ErrorBoundary.js";
 import { Icon } from "./Icon.js";
 import { Skyline3D } from "./Skyline3D.js";
+import { supportsWebGL } from "../lib/webgl.js";
 
 const A_FILL = "rgba(111,176,106,0.22)";
 const B_FILL = "rgba(224,138,79,0.22)";
@@ -377,30 +379,38 @@ export function Compare({ a, b, onExit, onView }: TProps) {
       </div>
 
       {/* Color-matched cities */}
-      <div className="compare-skylines">
-        {people.map(({ r, accent, side }) => (
-          <div className="card" key={r.profile.login}>
-            <div className="card-head">
-              <h3 style={{ color: accent }}>@{r.profile.login}</h3>
-            </div>
-            <Suspense
-              fallback={
-                <div className="skyline-loading muted">Rendering 3D…</div>
-              }
-            >
-              <Skyline3D
-                days={r.calendar.days}
-                scaleMax={scaleMax}
-                colors={side === "a" ? A_RAMP : B_RAMP}
-              />
-            </Suspense>
+      {/* Both forests need WebGL; without it three.js throws mid-render and
+          takes the whole head-to-head down with it. */}
+      {supportsWebGL() && (
+        <>
+          <div className="compare-skylines">
+            {people.map(({ r, accent, side }) => (
+              <div className="card" key={r.profile.login}>
+                <div className="card-head">
+                  <h3 style={{ color: accent }}>@{r.profile.login}</h3>
+                </div>
+                <ErrorBoundary fallback={null}>
+                  <Suspense
+                    fallback={
+                      <div className="skyline-loading muted">Rendering 3D…</div>
+                    }
+                  >
+                    <Skyline3D
+                      days={r.calendar.days}
+                      scaleMax={scaleMax}
+                      colors={side === "a" ? A_RAMP : B_RAMP}
+                    />
+                  </Suspense>
+                </ErrorBoundary>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <p className="muted compare-note">
-        Tree heights share one scale, so the two forests are directly
-        comparable.
-      </p>
+          <p className="muted compare-note">
+            Tree heights share one scale, so the two forests are directly
+            comparable.
+          </p>
+        </>
+      )}
     </div>
   );
 }
