@@ -60,17 +60,31 @@ type TJogruberResponse = {
 export async function fetchCalendar(
   username: string,
   fetchImpl: typeof fetch = fetch,
-  sinceYear?: number,
+  sinceYear?: number | PromiseLike<number | undefined>,
+  onRecent?: (recent: TCalendarSummary) => void,
 ): Promise<TCalendarSummary> {
   const currentYear = Number(todayISO().slice(0, 4));
-  const firstYear = Math.min(
-    Math.max(sinceYear ?? FIRST_GITHUB_YEAR, FIRST_GITHUB_YEAR),
-    currentYear,
-  );
 
   // Requests share a gate: the first 429 parks the rest until the window
   // resets, instead of each discovering the same limit for itself.
   const gate: TThrottleGate = { openAt: 0 };
+
+  // The trailing window needs no year bound, so it goes out immediately —
+  // ahead of `sinceYear`, which a caller may still be fetching (it comes from
+  // the account's creation date). Only the history has to wait for it.
+  const recentPending = fetchCalendarWindow(
+    username,
+    "last",
+    fetchImpl,
+    gate,
+    MAX_SCRAPE_ATTEMPTS,
+    Date.now() + RECENT_BUDGET_MS,
+  );
+
+  const firstYear = Math.min(
+    Math.max((await sinceYear) ?? FIRST_GITHUB_YEAR, FIRST_GITHUB_YEAR),
+    currentYear,
+  );
 
   const years: number[] = [];
   for (let year = firstYear; year <= currentYear; year++) years.push(year);
@@ -90,44 +104,59 @@ export async function fetchCalendar(
     ).catch(() => null),
   );
 
-  const recent = await fetchCalendarWindow(
-    username,
-    "last",
-    fetchImpl,
-    gate,
-    MAX_SCRAPE_ATTEMPTS,
-    Date.now() + RECENT_BUDGET_MS,
-  );
+  const recent = await recentPending;
+
+  // Hand the trailing window over the moment it lands. Callers that render
+  // incrementally can show a profile now rather than sitting on a spinner for
+  // as long as the history takes; every year is still outstanding here, so the
+  // summary reports itself as incomplete.
+  onRecent?.(mergeCalendar([recent], years, years, currentYear));
+
   const history = await historyPending;
 
-  // Keyed by date so the two sources merge cleanly: a full year supersedes the
-  // trailing window wherever they overlap, and the window fills the rest.
-  const byDate = new Map<string, TCalendarDay>();
-  for (const d of recent.contributions ?? []) byDate.set(d.date, { ...d });
-
-  const totalByYear: Record<string, number> = {};
+  const scraped: TJogruberResponse[] = [recent];
   const unscraped: number[] = [];
   history.forEach((page, i) => {
-    const year = years[i] as number;
-    if (!page) {
-      unscraped.push(year);
-      return;
-    }
+    if (page) scraped.push(page);
+    else unscraped.push(years[i] as number);
+  });
+
+  return mergeCalendar(scraped, unscraped, years, currentYear);
+}
+
+/**
+ * Fold the fetched windows into one summary.
+ *
+ * Days are keyed by date so the sources merge cleanly — a full year supersedes
+ * the trailing window wherever they overlap, and the window fills the rest.
+ * A year listed in `unscraped` is only reported as missing when the merged days
+ * do not already cover it end to end: the trailing window reaches back past
+ * January, so the current year is complete even when its own scrape failed.
+ */
+function mergeCalendar(
+  pages: TJogruberResponse[],
+  unscraped: number[],
+  years: number[],
+  currentYear: number,
+): TCalendarSummary {
+  const byDate = new Map<string, TCalendarDay>();
+  const totalByYear: Record<string, number> = {};
+
+  for (const page of pages) {
     for (const d of page.contributions ?? []) byDate.set(d.date, { ...d });
     // Only calendar years: the trailing window reports itself as "lastYear",
     // which would show up as a bogus column on a per-year chart.
     for (const [key, total] of Object.entries(page.total ?? {})) {
-      if (/^\d{4}$/.test(key)) totalByYear[key] = total;
+      if (/^\d{4}$/.test(key) && years.includes(Number(key))) {
+        totalByYear[key] = total;
+      }
     }
-  });
+  }
 
   const days = [...byDate.values()].sort((a, b) =>
     a.date.localeCompare(b.date),
   );
 
-  // The trailing window reaches back past January, so the current year is
-  // covered in full even when its own scrape failed — count it as present and
-  // total it from the days rather than reporting a gap the data doesn't have.
   const today = todayISO();
   const missingYears = unscraped.filter((year) => {
     const covered =

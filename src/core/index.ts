@@ -1,5 +1,5 @@
 import { buildReport } from "./aggregate.js";
-import { readReport, writeReport } from "./cache.js";
+import { PARTIAL_TTL_MS, TTL_MS, readReport, writeReport } from "./cache.js";
 import { fetchCalendar } from "./contributions.js";
 import { fetchYearStats } from "./graphql.js";
 import {
@@ -7,7 +7,7 @@ import {
   fetchPublicEvents,
   fetchTopLanguages,
 } from "./github.js";
-import { TReport } from "./types.js";
+import { TCalendarSummary, TReport } from "./types.js";
 
 export * from "./types.js";
 export { emptyTypeRecord } from "./aggregate.js";
@@ -16,14 +16,21 @@ export { derivePersona } from "./persona.js";
 export type { TPersona } from "./persona.js";
 
 /**
- * One-shot: fetch every public source for a username and assemble a TReport.
+ * Fetch every public source for a username and assemble a TReport.
  * Works in the browser and in Node (both have global fetch on supported runtimes).
- * Successful results are cached for ~30 minutes (in memory + sessionStorage).
+ * Successful results are cached for ~30 minutes (in memory + sessionStorage);
+ * a report missing years of history is held far more briefly.
+ *
+ * `onPartial` is called once, as soon as there is enough for a usable profile
+ * (the trailing twelve months plus recent activity), with the years of history
+ * still outstanding. Callers that render it get a profile on screen seconds
+ * before the full report resolves; ignoring it simply waits for the whole thing.
  */
 export async function getReport(
   username: string,
   fetchImpl: typeof fetch = fetch,
   token?: string,
+  onPartial?: (report: TReport) => void,
 ): Promise<TReport> {
   const clean = username.trim().replace(/^@/, "");
   if (!/^[a-zA-Z0-9-]{1,39}$/.test(clean)) {
@@ -44,16 +51,59 @@ export async function getReport(
   // GitHub REST calls (api.github.com) — never to the calendar proxy.
   const ghFetch = authToken ? withAuth(fetchImpl, authToken) : fetchImpl;
 
-  // The profile comes first: the calendar is fetched year by year, and the
-  // account creation year is what bounds that range (see fetchCalendar). It
-  // also fails fast — and cheaply — on an unknown username.
-  const profile = await fetchProfile(clean, ghFetch);
+  // Everything starts at once. Only the *historical* half of the calendar
+  // depends on the profile (its creation date bounds the year range), and
+  // fetchCalendar waits on that promise itself, so the trailing window is
+  // already in flight while GitHub is still answering /users/<name>.
+  const profilePromise = quiet(fetchProfile(clean, ghFetch));
+  const eventsPromise = quiet(fetchPublicEvents(clean, ghFetch));
+  const languagesPromise = quiet(fetchTopLanguages(clean, ghFetch));
+
+  // Resolves as soon as the trailing twelve months are in, so an interim
+  // report can be handed over while the historical years are still arriving.
+  let onRecentCalendar: (recent: TCalendarSummary) => void = () => {};
+  let onRecentFailed: (err: unknown) => void = () => {};
+  const recentCalendar = new Promise<TCalendarSummary>((resolve, reject) => {
+    onRecentCalendar = resolve;
+    onRecentFailed = reject;
+  });
+
+  const calendarPromise = quiet(
+    fetchCalendar(
+      clean,
+      fetchImpl, // third-party proxy: never tokenized
+      quiet(profilePromise.then((p) => accountYear(p.createdAt))),
+      onPartial ? onRecentCalendar : undefined,
+    ),
+  );
+  // Nothing awaits recentCalendar unless onPartial was passed, and it is the
+  // calendar's failure that decides its fate.
+  calendarPromise.catch(onRecentFailed);
+  quiet(recentCalendar);
+
+  const profile = await profilePromise;
+
+  if (onPartial) {
+    // Languages are deliberately not awaited here: they cost an extra page of
+    // repos and feed one card, so holding first paint for them would trade a
+    // second of blank screen for a single list.
+    const [recent, events] = await Promise.all([recentCalendar, eventsPromise]);
+    onPartial(
+      buildReport({
+        profile,
+        calendar: recent,
+        events: events.events,
+        // The gaps are still being filled, so naming them here would report a
+        // hole that is merely pending. The caller knows it holds an interim.
+        notes: [...events.notes],
+      }),
+    );
+  }
 
   const [calendar, eventsResult, languages] = await Promise.all([
-    // third-party proxy: never tokenized
-    fetchCalendar(clean, fetchImpl, accountYear(profile.createdAt)),
-    fetchPublicEvents(clean, ghFetch),
-    fetchTopLanguages(clean, ghFetch),
+    calendarPromise,
+    eventsPromise,
+    languagesPromise,
   ]);
 
   // With a token, enrich with accurate last-year stats (by type + top repos).
@@ -82,8 +132,27 @@ export async function getReport(
     languages,
     yearStats,
   });
-  writeReport(cacheKey, report, now);
+  writeReport(
+    cacheKey,
+    report,
+    now,
+    calendar.complete ? TTL_MS : PARTIAL_TTL_MS,
+  );
   return report;
+}
+
+/**
+ * Mark a promise as one whose rejection is dealt with elsewhere.
+ *
+ * These fetches all run at once, so the first failure ends the request while
+ * its siblings are still in flight; without a handler attached up front, those
+ * siblings' rejections surface as unhandled errors in the console (and in any
+ * error reporter listening for them). Attaching one does not consume the
+ * rejection — whoever awaits the promise later still sees it.
+ */
+function quiet<T>(promise: Promise<T>): Promise<T> {
+  promise.catch(() => {});
+  return promise;
 }
 
 /** "2016", "2016 and 2017", or "2016, 2017 and 2019". */

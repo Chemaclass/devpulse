@@ -12,6 +12,7 @@ import {
 } from "../core/index.js";
 import { Landing, Skeleton } from "./components/AppStates.js";
 import { Bars, TBarDatum } from "./components/Bars.js";
+import { ErrorBoundary } from "./components/ErrorBoundary.js";
 import { Feed } from "./components/Feed.js";
 import { GameCard } from "./components/GameCard.js";
 import { ThemeToggle, TokenControl } from "./components/HeaderControls.js";
@@ -147,6 +148,10 @@ export function App() {
   const [vsLoading, setVsLoading] = useState(false);
   const [vsError, setVsError] = useState<string | null>(null);
   const [pendingVs, setPendingVs] = useState<string | null>(null);
+  // True while the report on screen is the interim one, still filling in.
+  const [provisional, setProvisional] = useState(false);
+  // Identifies the newest run, so a slower earlier one cannot overwrite it.
+  const runId = useRef(0);
   const { token } = useToken();
 
   /**
@@ -158,20 +163,33 @@ export function App() {
   async function run(raw: string, keepVs: string | null = null) {
     const username = parseUsername(raw);
     if (!username) return;
+    const id = ++runId.current;
+    const current = () => runId.current === id;
+
     syncUrl(username);
     setLoading(true);
     setError(null);
     setReport(null);
+    setProvisional(false);
     setMode("overall");
     setSelectedDate(null);
     setVsReport(null);
     setVsError(null);
     setQueryParam("vs", keepVs);
     try {
-      const r = await getReport(username, apiFetch, token);
+      // The interim report puts a profile on screen as soon as the recent
+      // window is in; the full one replaces it when the history arrives.
+      const r = await getReport(username, apiFetch, token, (partial) => {
+        if (!current()) return;
+        setReport(partial);
+        setProvisional(true);
+        setLoading(false);
+      });
+      if (!current()) return;
       setReport(r);
       trackProfileView(r.profile.login);
     } catch (err) {
+      if (!current()) return;
       if (err instanceof GitHubError && err.kind === "rate_limited") {
         setError(
           "GitHub's public API rate limit was hit (60 req/hour per IP). Please try again in a little while.",
@@ -180,7 +198,10 @@ export function App() {
         setError(err instanceof Error ? err.message : String(err));
       }
     } finally {
-      setLoading(false);
+      if (current()) {
+        setProvisional(false);
+        setLoading(false);
+      }
     }
   }
 
@@ -385,6 +406,7 @@ export function App() {
       {report && !loading && !vsReport && (
         <Dashboard
           report={report}
+          provisional={provisional}
           mode={mode}
           setMode={setMode}
           selectedDate={selectedDate}
@@ -471,6 +493,7 @@ function CompareBar({
 
 function Dashboard({
   report,
+  provisional,
   mode,
   setMode,
   selectedDate,
@@ -480,6 +503,8 @@ function Dashboard({
   vsError,
 }: {
   report: TReport;
+  /** The interim report is showing: some sections are still arriving. */
+  provisional: boolean;
   mode: TMode;
   setMode: (m: TMode) => void;
   selectedDate: string | null;
@@ -590,6 +615,7 @@ function Dashboard({
       {mode === "overall" ? (
         <OverallView
           report={report}
+          provisional={provisional}
           onPickDay={(d) => {
             setMode("date");
             setSelectedDate(d);
@@ -610,9 +636,11 @@ function Dashboard({
 
 function OverallView({
   report,
+  provisional,
   onPickDay,
 }: {
   report: TReport;
+  provisional: boolean;
   onPickDay: (date: string) => void;
 }) {
   const { calendar, byType, byRepo, byDay, window } = report;
@@ -649,9 +677,11 @@ function OverallView({
           icon="🔥"
           value={calendar.total.toLocaleString()}
           label={
-            calendar.complete
-              ? "All-time contributions"
-              : "Contributions (partial history)"
+            provisional
+              ? "Contributions so far…"
+              : calendar.complete
+                ? "All-time contributions"
+                : "Contributions (partial history)"
           }
         />
         <StatTile
@@ -696,13 +726,22 @@ function OverallView({
           </div>
         </div>
         {view === "3d" ? (
-          <Suspense
-            fallback={
-              <div className="skyline-loading muted">Rendering 3D…</div>
-            }
+          // The 3D view needs a WebGL context, and three.js throws during
+          // render when it cannot get one. Without a boundary that throw
+          // unmounts the entire report, so a machine with no GPU sees a blank
+          // page instead of a profile: catch it and fall back to the grid.
+          <ErrorBoundary
+            fallback={<Heatmap days={calendar.days} onSelect={onPickDay} />}
+            onError={() => setView("grid")}
           >
-            <Skyline3D days={calendar.days} onSelect={onPickDay} />
-          </Suspense>
+            <Suspense
+              fallback={
+                <div className="skyline-loading muted">Rendering 3D…</div>
+              }
+            >
+              <Skyline3D days={calendar.days} onSelect={onPickDay} />
+            </Suspense>
+          </ErrorBoundary>
         ) : (
           <Heatmap days={calendar.days} onSelect={onPickDay} />
         )}
@@ -753,6 +792,10 @@ function OverallView({
           <h3>Top languages</h3>
           {langBars.length ? (
             <Bars data={langBars} />
+          ) : provisional ? (
+            // Absent because the repo pages are still in flight, not because
+            // there is nothing to show — don't state the latter yet.
+            <p className="muted">Loading…</p>
           ) : (
             <p className="muted">
               No public repositories with a primary language.

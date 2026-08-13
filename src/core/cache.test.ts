@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { clearReportCache, readReport, writeReport } from "./cache.js";
+import {
+  PARTIAL_TTL_MS,
+  clearReportCache,
+  readReport,
+  writeReport,
+} from "./cache.js";
 import { TReport } from "./types.js";
 
 const report = { profile: { login: "x" } } as TReport;
@@ -41,6 +46,12 @@ describe("report cache", () => {
   it("expires entries after the TTL", () => {
     writeReport("u|anon", report, T0);
     expect(readReport("u|anon", T0 + TTL + 1)).toBeNull();
+  });
+
+  it("honours a shorter TTL, so a degraded report is not pinned", () => {
+    writeReport("u|anon", report, T0, PARTIAL_TTL_MS);
+    expect(readReport("u|anon", T0 + PARTIAL_TTL_MS - 1)).toBe(report);
+    expect(readReport("u|anon", T0 + PARTIAL_TTL_MS + 1)).toBeNull();
   });
 
   it("clears all entries", () => {

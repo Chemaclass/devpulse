@@ -8,12 +8,58 @@ vi.mock("../core/index.js", async (importOriginal) => {
 });
 
 // Imported after the mock: getReport is the stub, GitHubError is the real class.
-import { getReport, GitHubError } from "../core/index.js";
+import { getReport, GitHubError, TReport } from "../core/index.js";
+import { buildReport } from "../core/aggregate.js";
+import { summarizeCalendar } from "../core/contributions.js";
 import { App } from "./App.js";
 import { ThemeProvider } from "./theme.js";
 import { TokenProvider } from "./token.js";
 
+// The 3D view needs WebGL, which jsdom has no answer for.
+vi.mock("./components/Skyline3D.js", () => ({
+  Skyline3D: () => null,
+}));
+
 const mockGetReport = vi.mocked(getReport);
+
+/** A real report, assembled the way the app assembles one. */
+function reportFixture({
+  total,
+  complete,
+}: {
+  total: number;
+  complete: boolean;
+}): TReport {
+  // Two days, so the total differs from the best-day count and each tile's
+  // number is unambiguous to query.
+  const calendar = summarizeCalendar(
+    [
+      { date: "2026-08-01", count: total - 7, level: 4 },
+      { date: "2026-08-02", count: 7, level: 1 },
+    ],
+    { "2026": total },
+    complete ? [] : [2015],
+  );
+  return buildReport({
+    profile: {
+      login: "torvalds",
+      name: "Linus Torvalds",
+      avatarUrl: "",
+      htmlUrl: "",
+      bio: null,
+      company: null,
+      location: null,
+      followers: 1,
+      following: 0,
+      publicRepos: 1,
+      createdAt: "2011-09-03T00:00:00Z",
+    },
+    calendar,
+    events: [],
+    notes: [],
+    languages: [],
+  });
+}
 
 function renderApp() {
   return render(
@@ -45,6 +91,44 @@ describe("App", () => {
     renderApp();
     await userEvent.setup().type(searchBox(), "torvalds{Enter}");
     expect(await screen.findByLabelText("Loading report")).toBeInTheDocument();
+  });
+
+  it("renders the interim report before the full one arrives", async () => {
+    const interim = reportFixture({ total: 1_200, complete: false });
+    const full = reportFixture({ total: 9_999, complete: true });
+
+    let finish: (r: TReport) => void = () => {};
+    mockGetReport.mockImplementationOnce(
+      (_u: string, _f?: unknown, _t?: unknown, onPartial?: unknown) => {
+        (onPartial as (r: TReport) => void)(interim);
+        return new Promise<TReport>((resolve) => {
+          finish = resolve;
+        });
+      },
+    );
+
+    renderApp();
+    await userEvent.setup().type(searchBox(), "torvalds{Enter}");
+
+    // A profile is on screen while the history is still in flight, labelled as
+    // provisional rather than passed off as the final figure.
+    expect(
+      await screen.findByText(/contributions so far/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Loading report")).not.toBeInTheDocument();
+    // The tile counts up to its value, so allow the animation to land.
+    expect(
+      await screen.findByText("1,200", {}, { timeout: 3000 }),
+    ).toBeVisible();
+
+    finish(full);
+    expect(
+      await screen.findByText(/all-time contributions/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/contributions so far/i)).not.toBeInTheDocument();
+    expect(
+      await screen.findByText("9,999", {}, { timeout: 3000 }),
+    ).toBeVisible();
   });
 
   it("surfaces a friendly error when the lookup fails", async () => {

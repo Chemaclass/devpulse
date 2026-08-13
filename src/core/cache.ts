@@ -10,7 +10,15 @@ import { TReport } from "./types.js";
 // Both share one TTL. The token value is never stored (only whether a token
 // was used is encoded in the caller's key).
 
-const TTL_MS = 30 * 60 * 1000;
+export const TTL_MS = 30 * 60 * 1000;
+
+/**
+ * Reports built from an incomplete calendar are held only briefly: the gap
+ * comes from a service having a bad minute, and pinning that answer for half
+ * an hour would keep showing a degraded profile long after it recovered.
+ */
+export const PARTIAL_TTL_MS = 90 * 1000;
+
 const PREFIX = "devpulse-report:";
 
 type TEntry = {
@@ -67,8 +75,13 @@ export function readReport(key: string, now: number): TReport | null {
 }
 
 /** Store a report under the key in both tiers. */
-export function writeReport(key: string, report: TReport, now: number): void {
-  const entry: TEntry = { report, expires: now + TTL_MS };
+export function writeReport(
+  key: string,
+  report: TReport,
+  now: number,
+  ttlMs: number = TTL_MS,
+): void {
+  const entry: TEntry = { report, expires: now + ttlMs };
   memory.set(key, entry);
 
   const store = session();

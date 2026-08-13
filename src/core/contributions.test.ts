@@ -113,6 +113,39 @@ describe("fetchCalendar", () => {
     vi.useRealTimers();
   });
 
+  it("hands over the trailing window before the history lands", async () => {
+    freezeToday();
+    let releaseHistory = (): void => {};
+    const historyHeld = new Promise<void>((r) => {
+      releaseHistory = r;
+    });
+
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      const window = String(url).match(/y=([^&]+)/)?.[1] ?? "";
+      if (window === "last") return ok(lastPayload(["2026-03-01"], 5));
+      await historyHeld;
+      return ok(yearPayload(Number(window), 5));
+    });
+
+    const seen: number[] = [];
+    const pending = fetchCalendar(
+      "chemaclass",
+      fetchImpl as unknown as typeof fetch,
+      2025,
+      (recent) => seen.push(recent.total),
+    );
+
+    // The interim summary is delivered while the years are still outstanding.
+    await vi.waitFor(() => expect(seen).toEqual([5]));
+    releaseHistory();
+
+    const summary = await pending;
+    expect(summary.total).toBe(10); // 2025 + 2026, once the history arrives
+    expect(summary.complete).toBe(true);
+    expect(seen).toHaveLength(1); // handed over once, not per year
+    vi.useRealTimers();
+  });
+
   it("keeps the recent window when a year cannot be scraped", async () => {
     freezeToday();
     const fetchImpl = router((window) => {
