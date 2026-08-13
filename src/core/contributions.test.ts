@@ -265,6 +265,21 @@ describe("fetchCalendar", () => {
 });
 
 describe("summarizeCalendar", () => {
+  it("has no best day when nothing was ever contributed", () => {
+    // A year of empty squares: naming a "best" one would put a date against
+    // no activity at all.
+    const s = summarizeCalendar(days("2026-01-01", Array(60).fill(0)), {});
+    expect(s.bestDay).toBeNull();
+    expect(s.total).toBe(0);
+    expect(s.activeDays).toBe(0);
+    expect(s.averagePerActiveDay).toBe(0);
+  });
+
+  it("keeps the earliest day when two tie for the best", () => {
+    const s = summarizeCalendar(days("2026-01-01", [4, 1, 4]), {});
+    expect(s.bestDay?.date).toBe("2026-01-01");
+  });
+
   it("aggregates totals, active days, best day and averages", () => {
     const d = days("2026-05-30", [2, 0, 4, 1]); // 30,31,01,02
     const s = summarizeCalendar(d, { "2026": 7 });

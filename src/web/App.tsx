@@ -1,4 +1,12 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  ReactNode,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   derivePersona,
   emptyTypeRecord,
@@ -686,6 +694,30 @@ function Dashboard({
   );
 }
 
+/**
+ * A slot for a lazily-loaded chart. Holds the chart's height only when there
+ * is a chart in it: an empty grid reads as data rather than the absence of it,
+ * and a one-line message does not need 280px of card to sit in.
+ */
+function ChartSlot({
+  has,
+  height,
+  empty = "Nothing to chart yet.",
+  children,
+}: {
+  has: boolean;
+  height: number;
+  empty?: string;
+  children: ReactNode;
+}) {
+  if (!has) return <p className="muted">{empty}</p>;
+  return (
+    <div style={{ height }}>
+      <Suspense fallback={null}>{children}</Suspense>
+    </div>
+  );
+}
+
 function OverallView({
   report,
   provisional,
@@ -717,6 +749,20 @@ function OverallView({
     : repoBars;
 
   const persona = useMemo(() => derivePersona(report), [report]);
+  // chart.js draws an empty grid — or, on a radar, a shape — when every value
+  // is zero, which reads as data rather than the absence of it.
+  const hasMix = Object.values(mixByType).some((n) => n > 0);
+  const hasCalendar = calendar.total > 0;
+  // The daily chart's own window: a dormant account can have years of history
+  // and still nothing in the last thirty days.
+  const hasRecentDays = useMemo(() => {
+    const today = todayISO();
+    const recent = calendar.days.filter((d) => d.date <= today).slice(-30);
+    const tracked = new Set(
+      byDay.filter((d) => d.total > 0).map((d) => d.date),
+    );
+    return recent.some((d) => d.count > 0 || tracked.has(d.date));
+  }, [calendar.days, byDay]);
   // Default to the 3D view only where it can actually draw; the boundary
   // below still covers a context that is lost or refused later on.
   const canRender3D = supportsWebGL();
@@ -756,9 +802,9 @@ function OverallView({
         <StatTile
           className="glow-magenta"
           icon="🏆"
-          value={calendar.bestDay ? String(calendar.bestDay.count) : "0"}
+          value={calendar.bestDay ? String(calendar.bestDay.count) : "—"}
           label="Best day"
-          sub={calendar.bestDay?.date}
+          sub={calendar.bestDay?.date ?? "no contributions yet"}
         />
       </div>
 
@@ -819,23 +865,19 @@ function OverallView({
       <div className="grid">
         <div className="card col-8">
           <h3>Daily contributions · last 30 days</h3>
-          <div style={{ height: 280 }}>
-            {calendar.days.length ? (
-              <Suspense fallback={null}>
-                <DailyChart byDay={byDay} days={calendar.days} />
-              </Suspense>
-            ) : (
-              <p className="muted">No contributions to chart.</p>
-            )}
-          </div>
+          <ChartSlot
+            has={hasRecentDays}
+            height={280}
+            empty="Nothing in the last 30 days."
+          >
+            <DailyChart byDay={byDay} days={calendar.days} />
+          </ChartSlot>
         </div>
         <div className="card col-4">
           <h3>Contribution mix{mixSuffix}</h3>
-          <div style={{ height: 280 }}>
-            <Suspense fallback={null}>
-              <TypeDoughnut byType={mixByType} />
-            </Suspense>
-          </div>
+          <ChartSlot has={hasMix} height={280}>
+            <TypeDoughnut byType={mixByType} />
+          </ChartSlot>
         </div>
 
         <div className="card col-6">
@@ -863,31 +905,24 @@ function OverallView({
 
         <div className="card col-4">
           <h3>Contribution personality</h3>
-          <div style={{ height: 260 }}>
-            <Suspense fallback={null}>
-              <TypeRadar byType={mixByType} />
-            </Suspense>
-          </div>
+          <ChartSlot has={hasMix} height={260}>
+            <TypeRadar byType={mixByType} />
+          </ChartSlot>
         </div>
         <div className="card col-4">
           <h3>Weekly rhythm</h3>
-          <div style={{ height: 260 }}>
-            <Suspense fallback={null}>
-              <WeekdayBars days={calendar.days} />
-            </Suspense>
-          </div>
+          <ChartSlot has={hasCalendar} height={260}>
+            <WeekdayBars days={calendar.days} />
+          </ChartSlot>
         </div>
         <div className="card col-4">
           <h3>Contributions by year</h3>
-          <div style={{ height: 260 }}>
-            {Object.keys(calendar.totalByYear).length ? (
-              <Suspense fallback={null}>
-                <YearBars totalByYear={calendar.totalByYear} />
-              </Suspense>
-            ) : (
-              <p className="muted">No yearly data.</p>
-            )}
-          </div>
+          <ChartSlot
+            has={hasCalendar && Object.keys(calendar.totalByYear).length > 0}
+            height={260}
+          >
+            <YearBars totalByYear={calendar.totalByYear} />
+          </ChartSlot>
         </div>
 
         <div className="card col-12">

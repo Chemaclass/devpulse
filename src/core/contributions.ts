@@ -326,7 +326,9 @@ export function summarizeCalendar(
 
   let bestDay: TCalendarDay | null = null;
   for (const d of days) {
-    if (!bestDay || d.count > bestDay.count) bestDay = d;
+    // Strictly greater, and never zero: a year of empty squares has no best
+    // day, and naming one would put a date against nothing at all.
+    if (d.count > 0 && (!bestDay || d.count > bestDay.count)) bestDay = d;
   }
 
   const { current, longest } = computeStreaks(days);
