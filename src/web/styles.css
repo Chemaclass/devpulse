@@ -94,6 +94,27 @@ body::before {
   z-index: 0;
 }
 
+/* One focus ring for everything keyboard-reachable. Inputs keep their
+   border/glow treatment; :focus-visible leaves mouse clicks unringed. */
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+input:focus-visible,
+.search:focus-within input {
+  outline: none;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 a {
   color: var(--cyan);
   text-decoration: none;
@@ -158,11 +179,32 @@ a:hover {
   gap: 10px;
   background: var(--panel);
   border: 1px solid var(--panel-border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 8px 8px 8px 20px;
+  align-items: center;
 }
 .search:focus-within {
   border-color: var(--cyan);
+}
+/* Keyboard hint: "/" focuses the search. Pointless on touch, hidden there. */
+.search-kbd {
+  font:
+    600 11px/1 "Inter",
+    system-ui,
+    sans-serif;
+  color: var(--muted);
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  padding: 4px 7px;
+  user-select: none;
+}
+.search:focus-within .search-kbd {
+  display: none; /* already focused: the hint has done its job */
+}
+@media (hover: none) {
+  .search-kbd {
+    display: none;
+  }
 }
 .search input {
   flex: 1;
@@ -198,15 +240,20 @@ a:hover {
   font-size: 13px;
 }
 .examples button {
-  background: none;
-  border: none;
+  background: var(--panel-soft);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
   color: var(--cyan);
   cursor: pointer;
   font-size: 13px;
-  padding: 2px 4px;
+  padding: 4px 12px;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 .examples button:hover {
-  text-decoration: underline;
+  border-color: var(--cyan);
+  background: var(--panel);
 }
 
 /* ---------- Top controls (token + theme) ---------- */
@@ -214,7 +261,7 @@ a:hover {
   position: absolute;
   top: 18px;
   right: 20px;
-  z-index: 4;
+  z-index: 45;
   display: flex;
   gap: 8px;
   align-items: flex-start;
@@ -1345,35 +1392,42 @@ a.chip-link:hover {
 
 /* ---------- Compare ---------- */
 /* Modes + share cluster, top-right of the profile; compare bar sits below. */
-.profile-actions {
-  align-self: flex-start;
+/* View controls ride along: the page runs thousands of pixels, and losing
+   the tabs to the top of it means scrolling back to switch views. Blur +
+   translucent ground keep it legible over whatever passes underneath. */
+.view-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  padding: 10px 0;
+  margin-bottom: 14px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
-.profile-actions .modes {
+.view-bar .modes {
   flex-wrap: wrap;
 }
-/* Tablet: the cluster drops to its own line — span it, modes left / share right. */
-@media (max-width: 900px) {
-  .profile-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-}
-/* Phone: stack, full-width share. */
+/* Phone: one compact row — a stacked sticky bar would pin ~110px of a small
+   viewport. Tabs tighten and Share drops to its icon. */
 @media (max-width: 520px) {
-  .profile-actions {
-    flex-direction: column;
-    align-items: stretch;
+  .view-bar {
+    flex-wrap: nowrap;
   }
-  .profile-actions .modes {
-    justify-content: flex-start;
+  .view-bar .modes button {
+    padding: 8px 10px;
+    font-size: 12px;
   }
-  .profile-actions .share-menu-wrap .share-btn {
-    width: 100%;
+  .view-bar .share-label {
+    display: none;
+  }
+  .view-bar .share-menu {
+    right: 0;
   }
 }
 

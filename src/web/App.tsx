@@ -90,7 +90,7 @@ function ShareTools({ login, persona }: { login: string; persona: TPersona }) {
   return (
     <div className="share-menu-wrap" ref={wrapRef}>
       <button className="share-btn" onClick={() => setOpen((o) => !o)}>
-        <Icon glyph="🔗" /> Share ▾
+        <Icon glyph="🔗" /> <span className="share-label">Share ▾</span>
       </button>
       {open && (
         <div className="share-menu">
@@ -174,6 +174,28 @@ export function App() {
   // Identifies the newest run, so a slower earlier one cannot overwrite it.
   const runId = useRef(0);
   const vsRunId = useRef(0);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // "/" focuses the search from anywhere, the way GitHub itself does. Typed
+  // into a field it stays a "/", and Escape hands focus back to the page.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = document.activeElement;
+      const typing =
+        el instanceof HTMLInputElement ||
+        el instanceof HTMLTextAreaElement ||
+        (el instanceof HTMLElement && el.isContentEditable);
+      if (e.key === "/" && !typing) {
+        e.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      } else if (e.key === "Escape" && el === searchRef.current) {
+        searchRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const { token, setPanelOpen } = useToken();
 
   /**
@@ -389,6 +411,7 @@ export function App() {
           }}
         >
           <input
+            ref={searchRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="github username or profile URL…"
@@ -403,6 +426,9 @@ export function App() {
             data-bwignore
             data-form-type="other"
           />
+          <kbd className="search-kbd" aria-hidden="true">
+            /
+          </kbd>
           <button type="submit" disabled={loading}>
             {loading ? "Scanning…" : "Pulse it"}
           </button>
@@ -419,7 +445,7 @@ export function App() {
               >
                 {u}
               </button>
-              {i < EXAMPLES.length - 1 ? " · " : ""}
+              {i < EXAMPLES.length - 1 ? " " : ""}
             </span>
           ))}
         </p>
@@ -647,37 +673,38 @@ function Dashboard({
           </div>
         </div>
         <div className="spacer" />
-        <div className="profile-actions">
-          <div className="modes">
-            <button
-              className={mode === "overall" ? "active" : ""}
-              onClick={() => setMode("overall")}
-            >
-              Overall
-            </button>
-            <button
-              className={mode === "latest" ? "active" : ""}
-              onClick={() => setMode("latest")}
-            >
-              Latest day
-            </button>
-            <button
-              className={mode === "date" ? "active" : ""}
-              onClick={() => setMode("date")}
-            >
-              Pick a day
-            </button>
-            {mode === "date" && (
-              <input
-                type="date"
-                value={selectedDate ?? ""}
-                max={todayISO()}
-                onChange={(e) => setSelectedDate(e.target.value || null)}
-              />
-            )}
-          </div>
-          <ShareTools login={profile.login} persona={persona} />
+      </div>
+
+      <div className="view-bar">
+        <div className="modes">
+          <button
+            className={mode === "overall" ? "active" : ""}
+            onClick={() => setMode("overall")}
+          >
+            Overall
+          </button>
+          <button
+            className={mode === "latest" ? "active" : ""}
+            onClick={() => setMode("latest")}
+          >
+            Latest day
+          </button>
+          <button
+            className={mode === "date" ? "active" : ""}
+            onClick={() => setMode("date")}
+          >
+            Pick a day
+          </button>
+          {mode === "date" && (
+            <input
+              type="date"
+              value={selectedDate ?? ""}
+              max={todayISO()}
+              onChange={(e) => setSelectedDate(e.target.value || null)}
+            />
+          )}
         </div>
+        <ShareTools login={profile.login} persona={persona} />
       </div>
 
       <CompareBar onCompare={onCompare} loading={vsLoading} error={vsError} />
