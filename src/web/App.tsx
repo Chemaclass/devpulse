@@ -415,6 +415,8 @@ export function App() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="github username or profile URL…"
+            aria-label="GitHub username or profile URL"
+            aria-keyshortcuts="/"
             autoFocus
             spellCheck={false}
             autoCapitalize="none"
